@@ -187,4 +187,4 @@ for i in range(len(t)):
         creepcoeff_steel[i] = r_steel[i] / (1 - r_steel[i])
     else:
         creepcoeff_steel[i]=0
-
+#Note that this is only the calculation of variables 
