@@ -1,0 +1,190 @@
+import numpy as np
+import math
+
+#Variables Employed
+#Nej=external axial loading - input by users
+#Mej=external bending moment loading - input by users
+#tau0=time of first loading - input by users
+#Ec_t=Elastic Modulus of concrete at particular times - calcualated
+#Density = Density of concrete - input by user
+#f_c= compressive strength of concrete - input by user
+#f_cm=cylinder compressive strength - input by user (0.9fcm = fcmi)
+#t=the time required by users
+#s=cement value used to calculate Ec_t
+#u_s=type of cement unput by user
+#creep_basic= basic creep value
+#A=cross-sectional area of member
+#ue=proportion of section perimeter exposed
+#th=hypothetical thickness
+#u_k4=userinputs environment type
+#creepcoeff=creep coefficient matrix for the respective times
+#shrink_aggregate = quality of aggregate (eshd,b*)
+#taud=age of commencement of drying
+#shrink_shd=drying shrinkage
+#shrink_she=endogenous shrinkage
+#shrink_sh=shrinkage strain
+#pp_t_init=inital prestressing force prior to transfer
+#ep=elastic modulus of prestressed concrete
+#ap_i=Areas of the i'th layer of prestressed steel - will vary based on girder type
+#strainpj_init= initial strains in the prestressing tendons prior to transfer
+#stressp_init=input as MPa
+#fp=breaking strength of prestressing steel
+#tendon_mat=tendon material ef if 1-Wire/strand, 2-Alloy Steel bars
+#temp=average temperature over time
+#u_rb: 1- low relaxation wire, 2 - low relaxation strand, 3-allow steel bars
+#cf=creep function
+#creep_t_tau
+
+
+
+#Input User Values
+N=-100 #kN #needtobeinput
+M=-50 #kNm #needtobeinput
+tau0=28 #days #needtobeinput
+density=2400 #user inputs kg/m^3 #needtobeinput
+fc=40 #mPa #needtobeinput
+f_cmi=43.7 #MPa f_cmi or f_cm needs to be unput by user #needtobeinput
+t=np.array([28,100,30000]) #days input by user #needtobeinput
+u_s=1 #user inputs cement type as high strength early cement #needtobeinput #high strength of portland
+u_A=317
+ue=900 #mm #needtobeinput
+u_k4=1 # where arid=1, interior=2, temperate=3, tropical=4
+u_shrink_aggregate=1 #1=Good Aggregate=800*10^-6, 0=Uncertain Aggregate=1000*10^-6
+taud=28 #days
+u_pp_t_init=1000 #input as kN
+u_ep=200 #input as GPa
+ap_i=800 #input as mm^2
+stressp_init=80 #input as MPa
+fp=100 #input as MPa
+tendon_mat=1 #if 1-wire/strand, 2-alloy steel bars
+temp=20 #degrees
+u_rb=1 #strand type 1- low relaxation wire, 2 - low relaxation strand, 3-allow steel bars
+
+
+#Calculations on user inputs
+Nej=-N*pow(10,3) #N
+Mej=-M*pow(10,6) #Nmm
+if u_s==0:
+    s=0.38 #Ordinary Portland Cement
+else:
+    s=0.25 #High Strength Early Cement
+A=u_A*pow(10,3) #units are mm^2 #needtobeinput
+environment_type={1:0.7,2:0.65,3:0.6,4:0.5}
+k4=environment_type[u_k4]
+shrink_aggregate_type={1:(800*pow(10,-6)),2:(1000*pow(10,-6))}
+shrink_aggregate=shrink_aggregate_type[u_shrink_aggregate]
+pp_t_init=u_pp_t_init*pow(10,3)
+ep=u_ep*pow(10,3)
+rb_type={1:(2/100),2:(2.5/100),3:(4/100)}
+rb=rb_type[u_rb]
+
+#Create Blank Arrays
+ec_t=np.zeros(len(t))
+k2=np.zeros((len(t), len(t)))
+creepcoeff=np.zeros((len(t), len(t)))
+k1=np.zeros(len(t))
+shrink_shd=np.zeros(len(t))
+shrink_she=np.zeros(len(t))
+shrink_sh=np.zeros(len(t))
+k4_steel=np.zeros(len(t))
+r_steel=np.zeros(len(t))
+creepcoeff_steel=np.zeros(len(t))
+cf = np.zeros((len(t), len(t)))
+k3=np.zeros((len(t),1))
+#creep_t_tau=np.zeros((len(t), len(t))) #Needs to be used after creep(t,tau) calculated
+
+
+#Calculate Ec(tau0) - calculates using AS3600:2019 (3.1.2) or Pg25 textbook - calculated correctly
+if f_cmi<=40:
+    Ec_0=pow(density,1.5)*(0.043*math.sqrt(f_cmi))
+else:
+    Ec_0=pow(density,1.5)*(0.024*math.sqrt(f_cmi)+0.12)
+
+#Calculate Ec_t - define function using equation 2.2c (textbook) page 26
+for i in range(len(t)):
+    ec_t[i]=pow(math.exp(s*(1-math.sqrt(28/(t[i])))),0.5)*Ec_0
+
+#Calculate Creep Coefficient (page 27 from textbook)
+#Calculate Basic creep
+creep_basic_array=np.array([[20,4.5],[25,3.8],[32,3],[40,2.4],[50,2],[65,1.7],[80,1.5],[100,1.3]]) #never changes
+for i in range(len(creep_basic_array)):
+    if creep_basic_array[i][0]==fc:
+        basic_creep=creep_basic_array[i][1]
+        break
+    else:
+        if creep_basic_array[i][0]<fc:
+            continue
+        else:
+            basic_creep_grad=(creep_basic_array[i][1]-creep_basic_array[i-1][1])/(creep_basic_array[i][0]-creep_basic_array[i-1][0])
+            basic_creep=creep_basic_array[i-1][1]+(fc-creep_basic_array[i-1][0])*basic_creep_grad
+            break
+#Calculate th
+th=2*A/ue
+#Calculate k3
+for i in range(len(t)):
+    k3[i][0] = 2.7 / (1 + math.log10(t[i]))
+print(k3)
+
+#Calculate k5
+alpha2=1+1.12*math.exp(-0.008*th)
+alpha3=0.7/(k4*alpha2)
+if fc<=50:
+    k5=1
+else:
+    k5=(2-alpha3)-0.02*(1-alpha3)*fc
+#Calculate k2
+#def k2_calc(time,time1):
+#    k2_coefficient=alpha2*pow((time-time1),0.8)/(pow((time-time1),0.8)+0.15*th)
+#    return k2_coefficient
+for i in range(len(t)):
+    for j in range(len(t)):
+        if j>i:
+            k2[i][j]=alpha2*pow((t[j]-t[i]),0.8)/(pow((t[j]-t[i]),0.8)+0.15*th)
+            creepcoeff[i][j] =  k4 * k5 * basic_creep*k2[i][j]*k3[i][0]
+        else:
+            k2[i][j]=0
+            creepcoeff[i][j]=0
+
+#Shrinkage Strain Calculation
+shrink_shdb=(1-0.008*fc)*shrink_aggregate
+alpha1=0.8+1.2*math.exp(-0.005*th)
+def k1_calc(time):
+    k1_coefficient=alpha1*pow((time-taud),0.8)/(pow((time-taud),0.8)+0.15*th)
+    return k1_coefficient
+
+for i in range(len(t)):
+    k1[i]=k1_calc(t[i])
+    shrink_shd[i]=k1[i]*k4*shrink_shdb
+
+shrink_she_asterix=(0.06*fc-1)*50*pow(10,-6)
+for i in range(len(t)):
+    shrink_she[i]=shrink_she_asterix*(1-math.exp(-0.1*t[i]))
+shrink_sh=shrink_she+shrink_shd
+
+#Calculate Initial Strains in the Prestressing Tendons prior to transfer
+strainpj_init=pp_t_init/(ep*ap_i)
+
+#Calculate Creep Coefficient for prestressing Steel
+#k5_steel calculation
+gamma=stressp_init/fp
+if gamma<0.4:
+    k5_steel=0
+elif gamma>=0.4 and gamma<=0.7:
+    k5_steel=(10*gamma-4)/3
+else:
+    if tendon_mat==1:
+        k5_steel=5*gamma-2.5
+    else:
+        k5_steel=(50*gamma-29)/6
+
+#k6_steel calculation
+k6_steel=temp/20 #has to be greater than 1, but doesn't specify what will happen if less than 1
+#k4_steel calculation
+for i in range(len(t)):
+    if (t[i]-tau0)>0:
+        k4_steel[i] = math.log10(5.4 * (t[i]) ** 1.6)
+        r_steel[i] = k4_steel[i] * k5_steel * k6_steel * rb
+        creepcoeff_steel[i] = r_steel[i] / (1 - r_steel[i])
+    else:
+        creepcoeff_steel[i]=0
+
