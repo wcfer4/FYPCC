@@ -188,3 +188,4 @@ for i in range(len(t)):
     else:
         creepcoeff_steel[i]=0
 
+test = 0
