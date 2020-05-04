@@ -82,10 +82,10 @@ def get_k2(tao_list, transfer, area_transfer, area_service, ue_transfer, ue_serv
     k2 = np.zeros((len(tao_list), len(tao_list)))
     for i in range(0, len(tao_list)):
         for j in range(0, len(tao_list)):
-            if i == j:
+            if i == j: #loading = time
                 k2[i, j] = 0
 
-            elif j < i:
+            elif j < i: #time<loading eg Creep(time,loading) = Creep (1,2) = 0
                 k2[i, j] = 0
 
             elif tao_list[j] >= transfer:
@@ -104,17 +104,19 @@ def get_k2(tao_list, transfer, area_transfer, area_service, ue_transfer, ue_serv
 def get_k4():
     k4_input = get_single_input("Environmental conditions: arid = 0, interior = 1, "
                                 "temperate = 2, tropical/coastal = 3: ")
-    if k4_input == 0:
-        k4 = 0.7
-    elif k4_input == 1:
-        k4 = 0.65
-    elif k4_input == 2:
-        k4 = 0.6
-    elif k4_input == 3:
-        k4 = 0.5
-    else:
-        print("Enter a valid number")
-    return k4
+    environment_type = {0: 0.7, 1: 0.65, 2: 0.6, 3: 0.5} #Create a Dictionary for environment types
+    return environment_type[k4_input]
+    #if k4_input == 0:
+    #    k4 = 0.7
+    #elif k4_input == 1:
+    #    k4 = 0.65
+    #elif k4_input == 2:
+    #    k4 = 0.6
+    #elif k4_input == 3:
+    #    k4 = 0.5
+    #else:
+    #    print("Enter a valid number")
+    #return k4
 
 
 # calculate value of k5 if f_c is between 50 and 100
@@ -147,9 +149,9 @@ def get_J_t_tao(tao_list, E_c_tao, phi_t_tao):
 
     for i in range(0, len(tao_list)):
         for j in range(0, len(tao_list)):
-            if j < i:
+            if j < i: # time < loading
                 J_t_tao[i, j] = 0
-            else:
+            else: # time >= loading
                 J_t_tao[i, j] = (1 / E_c_tao[i]) * (1 + phi_t_tao[i, j])
             j += 1
         i += 1
@@ -198,14 +200,14 @@ def get_f_p_init_M(tao_list, M_array, A_p, E_p, strain_p, y_p_s, y_p_t, ref_s, r
     return f_p_init_M
 
 
-def get_B_A_by_y(A_s_list, y_s_list, d_ref):
+def get_B_A_by_y(A_s_list, y_s_list, d_ref): #Used for S and P for sum of total layers
     B_mod = 0
     for i in range(0, len(A_s_list)):
         B_mod += A_s_list[i] * (y_s_list[i] - d_ref)
     return B_mod
 
 
-def get_I_A_by_y2(A_s_list, y_s_list, d_ref):
+def get_I_A_by_y2(A_s_list, y_s_list, d_ref): #Used for S and P for sum of total layers
     I_mod = 0
     for i in range(0, len(A_s_list)):
         I_mod += A_s_list[i] * ((y_s_list[i] - d_ref) ** 2)
@@ -296,15 +298,17 @@ def get_I_c(tao_list, I_gross_s, I_gross_t, A_s, A_t, c_depth_s, c_depth_t, ref_
 
 
 def get_r_b_steel():
-    if rb_input == 0:
-        rb = 0.02
-    elif rb_input == 1:
-        rb = 0.025
-    elif rb_input == 2:
-        rb = 0.04
-    else:
-        print("Enter a valid number")
-    return rb
+    rb_type = {0: (2 / 100), 1: (2.5 / 100), 2: (4 / 100)} #create a dictionary for values
+    return rb_type[rb_input]
+    #if rb_input == 0:
+    #    rb = 0.02
+    #elif rb_input == 1:
+    #    rb = 0.025
+    #elif rb_input == 2:
+    #    rb = 0.04
+    #else:
+    #    print("Enter a valid number")
+    #return rb
 
 
 def get_k5_steel(f_p_steel, sigma_jack):
@@ -315,9 +319,9 @@ def get_k5_steel(f_p_steel, sigma_jack):
         k5_i = (10 * gamma - 4) / 3
     else:
         if r_b_steel == 0.02 or 0.025:
-            k5_i = 5 * gamma - 2.5
+            k5_i = 5 * gamma - 2.5 #low relaxation wire or low relaxation strand
         else:
-            k5_i = (50 * gamma) / 6
+            k5_i = (50 * gamma) / 6 #Alloy Steel bars
     return k5_i
 
 
@@ -388,7 +392,7 @@ if __name__ == '__main__':
     ue_t = 2200
     ue_s = 2600
 
-    transfer = 150
+    #transfer = 150
 
     k2 = get_k2(tao, transfer, A_t, A_s, ue_t, ue_s)
     k3 = 2.7 / (1 + math.log10(tao[0]))
@@ -396,9 +400,25 @@ if __name__ == '__main__':
     i = 0
     k5 = get_k5(f_c, tao, transfer, A_t, A_s, ue_t, ue_s)
 
-    phi_basic_LT = {20: 4.5, 25: 3.8, 32: 3.0, 40: 2.4, 50: 2, 65: 1.7, 80: 1.5, 100: 1.3}
-    phi_basic = phi_basic_LT[f_c]
+
+    creep_basic_array = np.array(
+        [[20, 4.5], [25, 3.8], [32, 3], [40, 2.4], [50, 2], [65, 1.7], [80, 1.5], [100, 1.3]])
+    for i in range(len(creep_basic_array)):
+        if creep_basic_array[i][0] == f_c:
+            phi_basic = creep_basic_array[i][1]
+            break
+        else:
+            if creep_basic_array[i][0] < f_c:
+                continue
+            else:
+                basic_creep_grad = (creep_basic_array[i][1] - creep_basic_array[i - 1][1]) / (
+                            creep_basic_array[i][0] - creep_basic_array[i - 1][0])
+                phi_basic = creep_basic_array[i - 1][1] + (f_c - creep_basic_array[i - 1][0]) * basic_creep_grad
+                break
     phi_t_tao = k2 * k3 * k4 * k5 * phi_basic
+    #phi_basic_LT = {20: 4.5, 25: 3.8, 32: 3.0, 40: 2.4, 50: 2, 65: 1.7, 80: 1.5, 100: 1.3}
+    #phi_basic = phi_basic_LT[f_c]
+
 
     J_t_tao = get_J_t_tao(tao, E_c_tao, phi_t_tao)
 
@@ -435,8 +455,8 @@ if __name__ == '__main__':
     #     f_s_A_s = get_multiple_input("Enter total areas of each steel reinforcement layer (mm2): ")
     #     f_s_y_s = get_multiple_input("Enter distance from top of section for each steel reinforcement layer (mm): ")
 
-    tao = [28, 100, 30000]
-    transfer = 150
+    #tao = [28, 100, 30000]
+    #transfer = 150
 
     D_t = 1150
     D_slab = 0
@@ -454,14 +474,14 @@ if __name__ == '__main__':
     d_c_t = 602
     d_c_s = 602
 
-    n_p = 6.25
+    n_p = 6.25 #how to calculate
     f_p_A_p = [800, 800]
     f_p_E_p = 200000
     f_p_strain_p = [0.00625, 0.00625]
     f_p_y_p_t = [880, 1010]
     f_p_y_p_s = [880, 1010]
 
-    n_s = 6.25
+    n_s = 6.25 #how to calculate
     f_s_A_s = [900, 1800]
     f_s_y_s_t = [60, 1090]
     f_s_y_s_s = [60, 1090]
@@ -659,3 +679,4 @@ print(f_cr_j)
 # strain_0 = np.dot(F_j[0:2, 0:2], (r_e_j[:,0] - (f_p_init[:,0])).reshape(-1, 1))
 
 # r_c_j[0:2,0] = (np.dot(D_c_j[0:2,0:2],strain_0) + f_cr_j[0:1,0].reshape(-1, 1) - f_sh_j[0:1,0].reshape(-1, 1)).reshape(1, -1)
+
