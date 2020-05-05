@@ -1,5 +1,6 @@
 import numpy as np
 import math as math
+import csv
 
 
 # if user input needs to stored in a list
@@ -27,18 +28,18 @@ def get_single_input(input_text):
     return i
 
 
-# density of concrete
-def get_p_conc():
-    p_conc = 2400
-    i = input("Enter concrete density (MPa - if not 2400 is default): ")
-    if i != "":
-        p_conc = int(i)
-    return p_conc
+# density of concrete #not required
+#def get_p_conc():
+#    p_conc = 2400
+#    i = input("Enter concrete density (MPa - if not 2400 is default): ")
+#    if i != "":
+#        p_conc = int(i)
+#    return p_conc
 
 
 # elastic modulus of concrete
-def get_E_c(p_conc):
-    f_cmi_input = get_single_input("Enter mean in-situ compressive strength (MPa): ")
+def get_E_c(f_cmi_input,p_conc):
+    #f_cmi_input = get_single_input("Enter mean in-situ compressive strength (MPa): ")
     if f_cmi_input <= 40:
         E_c = math.pow(p_conc, 1.5) * 0.043 * math.sqrt(f_cmi_input)
     else:
@@ -47,9 +48,9 @@ def get_E_c(p_conc):
 
 
 # variable to calculate the elastic modulus over time
-def get_s():
+def get_s(s_input):
     while True:
-        s_input = get_single_input("Enter 0 for Ordinary Portland Cement or 1 for High Early Strength Cement: ")
+        #s_input = get_single_input("Enter 0 for Ordinary Portland Cement or 1 for High Early Strength Cement: ")
         if s_input == 0:
             s = 0.38
             break
@@ -101,9 +102,9 @@ def get_k2(tao_list, transfer, area_transfer, area_service, ue_transfer, ue_serv
 
 
 # calculate k4
-def get_k4():
-    k4_input = get_single_input("Environmental conditions: arid = 0, interior = 1, "
-                                "temperate = 2, tropical/coastal = 3: ")
+def get_k4(k4_input):
+    #k4_input = get_single_input("Environmental conditions: arid = 0, interior = 1, "
+                                #"temperate = 2, tropical/coastal = 3: ")
     environment_type = {0: 0.7, 1: 0.65, 2: 0.6, 3: 0.5} #Create a Dictionary for environment types
     return environment_type[k4_input]
     #if k4_input == 0:
@@ -297,7 +298,7 @@ def get_I_c(tao_list, I_gross_s, I_gross_t, A_s, A_t, c_depth_s, c_depth_t, ref_
     return I_c_array
 
 
-def get_r_b_steel():
+def get_r_b_steel(rb_input):
     rb_type = {0: (2 / 100), 1: (2.5 / 100), 2: (4 / 100)} #create a dictionary for values
     return rb_type[rb_input]
     #if rb_input == 0:
@@ -325,9 +326,9 @@ def get_k5_steel(f_p_steel, sigma_jack):
     return k5_i
 
 
-def get_k6_steel():
+def get_k6_steel(input_temp):
     temp = 20
-    i = input("Enter average temperature over time period (MPa, 20 degrees celsius is default): ")
+    i = input_temp
     if i != "":
         temp = int(i)
     return temp / 20
@@ -359,21 +360,96 @@ def get_k1(tao_list, transfer, area_transfer, area_service, ue_transfer, ue_serv
 
 
 if __name__ == '__main__':
-    # tao = get_multiple_input("Enter days of interest since t = 0 (include day where of first loading): ")
-    # N_e_j = get_multiple_input("Enter corresponding applied normal forces for days of interest (in kN): ")
-    # M_e_j= get_multiple_input("Enter corresponding applied moment forces for days of interest (in kNm): ")
 
-    tao = [28, 100, 30000]
-    transfer = 150
-    N_e_j = [-50000, -50000, -50000]
-    M_e_j = [100000, 1000000, 100000]
+    fileinput = str(input("Which file do you want? "))  # Allow for user to input .txt file
+    if not ".txt" in fileinput:
+        fileinput += ".txt"
+    # Input: FYP_5.6_2.txt
+
+    with open(fileinput) as csvDataFile:
+        csvReader = csv.reader(csvDataFile)
+        for row in csvReader:
+            data = [row for row in csv.reader(csvDataFile)]
+            input_d_loading = int(data[0][1])  # Time at First Loading R2C2
+            transfer = int(data[1][1])  # Time where Service Transfer ends R3C2
+            N_e_0 = int(data[2][1])  # Compressive Axial Force R4C2
+            M_e_0 = int(data[3][1])  # Hogging Moment R5C2
+            p_conc = int(data[4][1])  # Density R6C2
+            f_cmi_input = int(data[5][1])  # fcmi R7C2
+            s_input=int(data[6][1]) #cement type R8C2
+            f_c=int(data[7][1]) #compressive strength R9C2
+            A_t=int(data[8][1]) #Area at transfer R10C2
+            A_s=int(data[8][2]) #Area at service R10C3
+            ue_t=int(data[9][1]) #ue at transfer R11C2
+            ue_s = int(data[9][2])  # ue at service R11C3
+            k4_input=int(data[14][1]) #k4 input R16C2
+            D_t=int(data[13][1]) #Depth at Transfer R15C2
+            D_slab = int(data[13][2])  # Depth of Slab at Service R15C3
+            d_ref_t=int(data[15][1])  #Depth of Reference at Transfer R17C2
+            d_ref_s=int(data[15][2])  #Depth of Reference at Service R17C3
+            d_c_t=int(data[16][1]) # At Transfer R18C2
+            d_c_s=int(data[16][2]) # At Service R18C3
+            n_p=float(data[10][1]) #moduluar ratio of prestressing steel R12C2
+            n_s=float(data[10][2]) #modular ratio of reinforcing steel R12C3
+            layers_p=int(data[12][1]) #layers of prestressing steel R14C2
+            layers_s=int(data[11][1]) #layers of reinforcing steel R13C2
+            f_p_E_p=int(data[18][1]) #R20C2
+            p_p_init=int(data[19][1]) #R21C2
+            f_p_A_p=np.zeros(layers_p)
+            f_p_y_p_t=np.zeros(layers_p)
+            f_p_y_p_s=np.zeros(layers_p)
+            for i in range(len(f_p_A_p)):
+                f_p_A_p[i]=int(data[17][1+i]) #R19C2 and R19
+                f_p_y_p_t[i]=int(data[20][1+i]) #R22C2 and R22C3
+                f_p_y_p_s[i]=int(data[21][1+i]) #R23C2 and R23C3
+            f_s_A_s=np.zeros(layers_s)
+            f_s_y_s_t=np.zeros(layers_s)
+            f_s_y_s_s=np.zeros(layers_s)
+            for i in range(len(f_s_A_s)):
+                f_s_A_s[i] = int(data[22][1 + i])  # R24C2 and R24C3
+                f_s_y_s_t[i] = int(data[23][1 + i])  # R25C2 and R25C3
+                f_s_y_s_s[i] = int(data[24][1 + i])  # R26C2 and R26C3
+            I_gross_t=int(data[25][1]) #R27C2
+            I_gross_s=int(data[25][2]) #R27C3
+            f_p=int(data[26][1]) #R28C2
+            sigma_p_init=int(data[27][1]) #R29C2
+            rb_input=int(data[28][1]) #R30C2
+            f_p_input=int(data[29][1]) #R31C2
+            sigma_p_input=int(data[30][1]) #R32C2
+            input_temp=int(data[31][1]) #R33C2
+        csvDataFile.close()
+
+    ##Calculating the Tao values from the values input
+    # time_required=int(input("What time do you want to calculate the deflection for "))
+    # if time_required==input_d_loading: #if the time input = time at first loading
+    # tao=np.array([time_required])
+    # elif input_d_loading<time_required and time_required<transfer:
+    #    step_size=(time_required-input_d_loading)/10 #calculate using increments of 10
+    #    tao1=np.arange(input_d_loading,time_required,step_size,dtype=int)
+    #    if tao1[-1]==time_required:
+    #        tao=tao1
+    #    else:
+    #        tao=np.append(tao1,time_required)
+    # else:
+    #    step_size = (time_required-transfer) / 20 #calculating using in
+    #    tao1=np.append(input_d_loading,np.arange(transfer,time_required,step_size,dtype=int))
+    #    if tao1[-1]==time_required:
+    #        tao=tao1
+    #    else:
+    #        tao=np.append(tao1,time_required)
+
+    tao =np.array([28, 100, 30000])  # Hardcoding the time values until finalised
+    N_e_j = np.zeros(len(tao))
+    M_e_j = np.zeros(len(tao))
+    for i in range(len(tao)):
+        N_e_j[i] = N_e_0
+        M_e_j[i] = M_e_0
+
     r_e_j = np.array([[N_e_j], [M_e_j]])
 
-    # p_conc = get_p_conc()
-    # E_c = get_E_c(p_conc)
-    # s = get_s()
-    s = 0.28
-    E_c = 30000
+    E_c = get_E_c(f_cmi_input,p_conc) #Calculate E_c
+    s = get_s(s_input) #calculate s for Ec(t)
+
 
     # elastic modulus at each time point
     E_c_tao = []
@@ -386,20 +462,12 @@ if __name__ == '__main__':
     # ue_t = get_single_input("Enter exposed perimeter at transfer (mm): ")
     # ue_s = get_single_input("Enter exposed perimeter at service (mm): ")
     #
-    f_c = 50
-    A_t = 317000
-    A_s = 317000
-    ue_t = 2200
-    ue_s = 2600
-
-    #transfer = 150
 
     k2 = get_k2(tao, transfer, A_t, A_s, ue_t, ue_s)
     k3 = 2.7 / (1 + math.log10(tao[0]))
-    k4 = get_k4()
+    k4 = get_k4(k4_input)
     i = 0
     k5 = get_k5(f_c, tao, transfer, A_t, A_s, ue_t, ue_s)
-
 
     creep_basic_array = np.array(
         [[20, 4.5], [25, 3.8], [32, 3], [40, 2.4], [50, 2], [65, 1.7], [80, 1.5], [100, 1.3]])
@@ -418,7 +486,6 @@ if __name__ == '__main__':
     phi_t_tao = k2 * k3 * k4 * k5 * phi_basic
     #phi_basic_LT = {20: 4.5, 25: 3.8, 32: 3.0, 40: 2.4, 50: 2, 65: 1.7, 80: 1.5, 100: 1.3}
     #phi_basic = phi_basic_LT[f_c]
-
 
     J_t_tao = get_J_t_tao(tao, E_c_tao, phi_t_tao)
 
@@ -455,48 +522,20 @@ if __name__ == '__main__':
     #     f_s_A_s = get_multiple_input("Enter total areas of each steel reinforcement layer (mm2): ")
     #     f_s_y_s = get_multiple_input("Enter distance from top of section for each steel reinforcement layer (mm): ")
 
-    #tao = [28, 100, 30000]
-    #transfer = 150
-
-    D_t = 1150
-    D_slab = 0
     D_s = D_t + D_slab
 
-    A_t = 317000
-    A_s = 317000
 
-    ue_t = 2200
-    ue_s = 2500
-
-    d_ref_t = 300
-    d_ref_s = 300
-
-    d_c_t = 602
-    d_c_s = 602
-
-    n_p = 6.25 #how to calculate
-    f_p_A_p = [800, 800]
-    f_p_E_p = 200000
-    f_p_strain_p = [0.00625, 0.00625]
-    f_p_y_p_t = [880, 1010]
-    f_p_y_p_s = [880, 1010]
-
-    n_s = 6.25 #how to calculate
-    f_s_A_s = [900, 1800]
-    f_s_y_s_t = [60, 1090]
-    f_s_y_s_s = [60, 1090]
-
-    I_gross_t = 49900 * 10 ** 6
-    I_gross_s = 49900 * 10 ** 6
+    f_p_strain_p = [0.00625, 0.00625] #Harcoded
 
     A_j = []
     B_j = []
     I_j = []
 
-    E_c_j = [32000, 36000, 40000]
+    E_c_j = [32000, 36000, 40000] #Harcorded
 
-    r_e_j = np.array([N_e_j, M_e_j])
+    r_e_j = np.array([N_e_j, M_e_j]) #Already said at the beginning
 
+    #Calculate Vector of Prestressing Forces
     f_p_init_N = []
     f_p_init_M = []
     f_p_init_N = get_f_p_init_N(tao, f_p_init_N, f_p_A_p, f_p_E_p, f_p_strain_p)
@@ -568,9 +607,9 @@ for i in range(0,len(tao)):
     k4s = math.log10(5.4 * math.pow(tao[i], 1/6 ))
     k4_steel.append(k4s)
 
-# r_b_steel = get_r_b_steel()
+# r_b_steel = get_r_b_steel(rb_input)
 # k5_steel = get_k5_steel(f_p_input, sigma_p_input)
-# k6_steel = get_k6_steel()
+# k6_steel = get_k6_steel(input_temp)
 # k4_steel = np.array(k4_steel, dtype=np.float64)
 
 f_p = 1870 # input: breaking strength
@@ -594,8 +633,8 @@ f_p_rel_j = np.array([f_p_rel_N, f_p_rel_M], dtype=np.float64)
 
 # fsh loop
 # AS5100 shrinkage
-A_t = 317000
-A_s = 317000
+A_t = 317000 #is there are reason why it is recorded again
+A_s = 317000 #is there are reason why it is recorded again
 #strain cse
 f_c = 40
 strain_cse_star = (0.06 * f_c - 1) * 50 * math.pow(10, -6)
@@ -635,14 +674,14 @@ r_c_j = np.array([[-1865*10**3, -1465*10**3, 0],[-1165*10**6, -909*10**6, 0]])
 r_c_j = np.zeros((f_cr_j.shape[0], len(tao)))
 # F_j = np.array([[149.5*10**-12, -181.5*10**-15, 133.6*10**-12, -162.2*10**-15, 120.7*10**-12, -146*10**-15], [-181.5*10**-15, 573.5*10**-18, -162.2*10**-15, 515.4*10**-18, -146*10**-15, 468.1*10**-18]])
 #
-print(r_e_j)
-print(f_cr_j)
-print(f_sh_j)
-print(f_p_init)
-print(f_p_rel_j)
-print(F_j)
-print(r_c_j)
-print(F_e_j_i)
+#print(r_e_j)
+#print(f_cr_j)
+#print(f_sh_j)
+#print(f_p_init)
+#print(f_p_rel_j)
+#print(F_j)
+#print(r_c_j)
+#print(F_e_j_i)
 
 strain_j = np.zeros((2, len(tao)))
 m = 0
@@ -660,8 +699,8 @@ for i in range(0, len(tao)):
     m += 2
     n += 2
 
-print(r_c_j)
-print(f_cr_j)
+#print(r_c_j)
+#print(f_cr_j)
 
 # c = np.zeros((2,3))
 # a = np.array([[1, 2, 3], [1, 2, 3], [1, 2,  3]])
@@ -679,4 +718,3 @@ print(f_cr_j)
 # strain_0 = np.dot(F_j[0:2, 0:2], (r_e_j[:,0] - (f_p_init[:,0])).reshape(-1, 1))
 
 # r_c_j[0:2,0] = (np.dot(D_c_j[0:2,0:2],strain_0) + f_cr_j[0:1,0].reshape(-1, 1) - f_sh_j[0:1,0].reshape(-1, 1)).reshape(1, -1)
-
