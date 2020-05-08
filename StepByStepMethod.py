@@ -444,8 +444,8 @@ if __name__ == '__main__':
     #    else:
     #        tao=np.append(tao1,time_required)
 
-    tao =np.array([1,300,400])  # Hardcoding the time values until finalised
-    t=np.array([1,300,400]) #ensure that the tao values are in the t array
+    tao =np.array([1,300,400,500])  # Hardcoding the time values until finalised
+    t=np.array([1,300,400,500,600]) #ensure that the tao values are in the t array
     N_e_j = np.zeros(len(t))
     M_e_j = np.zeros(len(t))
     for i in range(len(t)):
@@ -503,7 +503,6 @@ if __name__ == '__main__':
 
     #F_e_j_i = np.zeros((len(tao), len(t)))
     F_e_j_i=get_Fe_j_i(t,tao,J_t_tao)
-    print(F_e_j_i)
 
     #for i in range(0, len(t)):
     #    for j in range(0, len(tao)):
@@ -548,8 +547,8 @@ if __name__ == '__main__':
     #Calculate Vector of Prestressing Forces
     f_p_init_N = []
     f_p_init_M = []
-    f_p_init_N = get_f_p_init_N(tao, f_p_init_N, f_p_A_p, f_p_E_p, f_p_strain_p)
-    f_p_init_M = get_f_p_init_M(tao, f_p_init_M, f_p_A_p, f_p_E_p, f_p_strain_p, f_p_y_p_s, f_p_y_p_t, d_ref_s, d_ref_t)
+    f_p_init_N = get_f_p_init_N(t, f_p_init_N, f_p_A_p, f_p_E_p, f_p_strain_p)
+    f_p_init_M = get_f_p_init_M(t, f_p_init_M, f_p_A_p, f_p_E_p, f_p_strain_p, f_p_y_p_s, f_p_y_p_t, d_ref_s, d_ref_t)
     f_p_init = np.array([f_p_init_N, f_p_init_M], dtype=np.float64)
 
 for i in (range(0, len(t))):  # creating 1 x j lists for Aj, Bj, Ij
@@ -620,22 +619,20 @@ for i in range(0,len(t)):
     k4s = math.log10(5.4 * math.pow(t[i], 1/6 ))
     k4_steel.append(k4s)
 
-# r_b_steel = get_r_b_steel(rb_input)
-# k5_steel = get_k5_steel(f_p_input, sigma_p_input)
-# k6_steel = get_k6_steel(input_temp)
+r_b_steel = get_r_b_steel(rb_input)
+k5_steel = get_k5_steel(f_p_input, sigma_p_input)
+k6_steel = get_k6_steel(input_temp)
 # k4_steel = np.array(k4_steel, dtype=np.float64)
 k4_steel=np.array(k4_steel,dtype=np.float64)
 
-f_p = 1870 # input: breaking strength
-sigma_p_init = 1000 # input: jacking stress
+# = 1870 # input: breaking strength
+#sigma_p_init = 1000 # input: jacking stress
 #k4_steel = np.array([0.97358677, 1.06572709, 1.47858064],dtype=np.float64)
-k5_steel = 0.44919786096256686
-k6_steel = 1.25
-r_b_steel = 0.02
+#k5_steel = 0.44919786096256686
+#k6_steel = 1.25
+#r_b_steel = 0.02
 R_steel = k4_steel * k5_steel * k6_steel * r_b_steel
 phi_p_steel = R_steel / (1 - R_steel)
-print(phi_p_steel)
-print(f_p_init_M)
 
 # loop for rel_j
 f_p_rel_N = []
@@ -648,10 +645,10 @@ f_p_rel_j = np.array([f_p_rel_N, f_p_rel_M], dtype=np.float64)
 
 # fsh loop
 # AS5100 shrinkage
-A_t = 317000 #is there are reason why it is recorded again
-A_s = 317000 #is there are reason why it is recorded again
+#A_t = 317000 #is there are reason why it is recorded again
+#A_s = 317000 #is there are reason why it is recorded again
 #strain cse
-f_c = 40
+#f_c = 40
 strain_cse_star = (0.06 * f_c - 1) * 50 * math.pow(10, -6)
 strain_cse = []
 for i in range(0, len(t)):
@@ -671,23 +668,21 @@ def get_strain_shd_b_star():
 #
 # k1 = get_k1(tao, transfer, A_t, A_s, ue_t, ue_s)
 # k4 = 0.6
-# strain_shd_b_star = get_strain_shd_b_star()
-# strain_shd_b = (1 - 0.008 * f_c) * strain_shd_b_star
+strain_shd_b_star = get_strain_shd_b_star()
+strain_shd_b = (1 - 0.008 * f_c) * strain_shd_b_star
 #
-# strain_sh_j = np.array(strain_cse) + strain_shd_b
-strain_sh_j = np.array([0, -200 * 10 ** -6, -400 * 10 ** -6]) ## example 5.6 values
+strain_sh_j = np.array(strain_cse) + strain_shd_b
+#strain_sh_j = np.array([0, -200 * 10 ** -6, -400 * 10 ** -6]) ## example 5.6 values
 #
 for i in range(0,len(t)):
     f_sh_j[0, i] = A_c_j[i] * E_c_j[i] * strain_sh_j[i]
     f_sh_j[1, i] = B_c_j[i] * E_c_j[i] * strain_sh_j[i]
 
-
-
 # loop that calculates fcr1 then rc1
 # Feji and rcj are set to values here to match book - outputs have been checked already
 #F_e_j_i = np.array([[0, -1.25, -0.972],[0, 0, -1.777],[0, 0, 0]])
-f_p_rel_j = np.array([[ 0, 40000, 60000], [0, 25800000, 38700000]])
-r_c_j = np.array([[-1865*10**3, -1465*10**3, 0],[-1165*10**6, -909*10**6, 0]])
+#f_p_rel_j = np.array([[ 0, 40000, 60000], [0, 25800000, 38700000]])
+#r_c_j = np.array([[-1865*10**3, -1465*10**3, 0],[-1165*10**6, -909*10**6, 0]])
 r_c_j = np.zeros((f_cr_j.shape[0], len(t)))
 # F_j = np.array([[149.5*10**-12, -181.5*10**-15, 133.6*10**-12, -162.2*10**-15, 120.7*10**-12, -146*10**-15], [-181.5*10**-15, 573.5*10**-18, -162.2*10**-15, 515.4*10**-18, -146*10**-15, 468.1*10**-18]])
 #
@@ -709,9 +704,29 @@ for i in range(0, len(t)):
     r_c_j[:, i] = np.dot(D_c_j[:, m:n], strain_j[:,i]) + f_cr_j[:,i] - f_sh_j[:, i]
 
     e = 0
-    for j in range(0, len(t)):
+    for j in range(0, len(tao)):
         d = F_e_j_i[j, i] * r_c_j[:, i]
         e = e + d
     f_cr_j[:, i] = e
     m += 2
     n += 2
+
+#print(r_c_j)
+#print(f_cr_j)
+
+# c = np.zeros((2,3))
+# a = np.array([[1, 2, 3], [1, 2, 3], [1, 2,  3]])
+# b = np.array([[10, 10, 10], [20, 20, 20]])
+# print(a)
+# print(b)
+# for i in range(0, len(a)):
+#     e = 0
+#     for j in range(0, len(a)):
+#         d = a[j, i] * b[:,i]
+#         e = e + d
+#     c[:,i] = e
+# print("c:\n", c)
+
+# strain_0 = np.dot(F_j[0:2, 0:2], (r_e_j[:,0] - (f_p_init[:,0])).reshape(-1, 1))
+
+# r_c_j[0:2,0] = (np.dot(D_c_j[0:2,0:2],strain_0) + f_cr_j[0:1,0].reshape(-1, 1) - f_sh_j[0:1,0].reshape(-1, 1)).reshape(1, -1)
