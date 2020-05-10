@@ -199,7 +199,7 @@ def get_f_p_init_N(t_list, N_array, A_p, E_p, strain_p):
     for i in range(0, len(t_list)):
         indiv_N = 0
         for j in range(0, len(A_p)):
-            indiv_N += get_init_N(A_p[j], E_p, strain_p[j])
+            indiv_N += get_init_N(A_p[j], E_p[j], strain_p[j])
         N_array.append(indiv_N)
     return N_array
 
@@ -209,9 +209,9 @@ def get_f_p_init_M(t_list, M_array, A_p, E_p, strain_p, y_p_s, y_p_t, ref_s, ref
         indiv_M = 0
         for j in range(0, len(A_p)):
             if t_list[i] >= transfer:
-                indiv_M += get_init_M(A_p[j], E_p, strain_p[j], y_p_s[j], ref_s)
+                indiv_M += get_init_M(A_p[j], E_p[j], strain_p[j], y_p_s[j], ref_s)
             else:
-                indiv_M += get_init_M(A_p[j], E_p, strain_p[j], y_p_t[j], ref_t)
+                indiv_M += get_init_M(A_p[j], E_p[j], strain_p[j], y_p_t[j], ref_t)
         f_p_init_M.append(indiv_M)
     return f_p_init_M
 
@@ -364,6 +364,36 @@ def get_k1(t_list, transfer, area_transfer, area_service, ue_transfer, ue_servic
             k1[0, i] = get_k1_value(alpha1, t_list[i], 0, get_th(area_transfer, ue_transfer))
     return k1
 
+def get_strain_p(prestress, A_p_list, E_p_list):
+    strain_list = []
+    for i in range(0, len(f_p_A_p)):
+        s_p = prestress[i] / (A_p_list[i] * E_p_list[i])
+        strain_list.append(s_p)
+    return strain_list
+
+def get_f_p_cent(tao_list, A_p_list, strands_n_list, y_p_list_s, y_p_list_t):
+    cent = []
+    for i in range(0, len(tao_list)):  ## assuming strands are uniform
+        s_total = 0
+        for j in range(0, len(A_p_list)):
+            if tao_list[i] >= transfer:
+                s = strands_n_list[j] * y_p_list_s[j]  ## calculating first moment from top of section
+                s_total += s
+            else:
+                s = strands_n_list[j] * y_p_list_t[j]
+                s_total += s
+        cent.append(s_total / sum(strands_n_list))
+    return cent
+
+def get_f_p_ecc(tao_list, cent_list, d_c_list_s, d_c_list_t):
+    ecc = []
+    for i in range(0, len(tao_list)):
+        if tao_list[i] >= transfer:
+            e = cent_list[i] - d_c_list_s
+        else:
+            e = cent_list[i] - d_c_list_t
+        ecc.append(e)
+    return ecc
 
 if __name__ == '__main__':
 
@@ -533,8 +563,13 @@ if __name__ == '__main__':
 
     D_s = D_t + D_slab
 
+    f_p = [1000000, 1000000] # is now array input
+    f_p_E_p = [200000, 200000] # is now array input
+    f_p_strain_p = get_strain_p(f_p, f_p_A_p, f_p_E_p)
 
-    f_p_strain_p = [0.00625, 0.00625] #Harcoded
+    strands_n = [2, 2] # new input, is number of strands per row
+    f_p_cent = get_f_p_cent(tao, f_p_A_p, strands_n, f_p_y_p_s, f_p_y_p_t)
+    f_p_ecc = get_f_p_ecc(tao, f_p_cent, d_c_s, d_c_t)
 
     A_j = []
     B_j = []
@@ -668,15 +703,15 @@ def get_strain_shd_b_star():
 #
 # k1 = get_k1(tao, transfer, A_t, A_s, ue_t, ue_s)
 # k4 = 0.6
-strain_shd_b_star = get_strain_shd_b_star()
-strain_shd_b = (1 - 0.008 * f_c) * strain_shd_b_star
+# strain_shd_b_star = get_strain_shd_b_star()
+# strain_shd_b = (1 - 0.008 * f_c) * strain_shd_b_star
 #
-strain_sh_j = np.array(strain_cse) + strain_shd_b
+# strain_sh_j = np.array(strain_cse) + strain_shd_b
 #strain_sh_j = np.array([0, -200 * 10 ** -6, -400 * 10 ** -6]) ## example 5.6 values
 #
-for i in range(0,len(t)):
-    f_sh_j[0, i] = A_c_j[i] * E_c_j[i] * strain_sh_j[i]
-    f_sh_j[1, i] = B_c_j[i] * E_c_j[i] * strain_sh_j[i]
+# for i in range(0,len(t)):
+#     f_sh_j[0, i] = A_c_j[i] * E_c_j[i] * strain_sh_j[i]
+#     f_sh_j[1, i] = B_c_j[i] * E_c_j[i] * strain_sh_j[i]
 
 # loop that calculates fcr1 then rc1
 # Feji and rcj are set to values here to match book - outputs have been checked already
@@ -696,20 +731,20 @@ r_c_j = np.zeros((f_cr_j.shape[0], len(t)))
 #print(F_e_j_i)
 
 strain_j = np.zeros((2, len(t)))
-m = 0
-n = 2
-for i in range(0, len(t)):
-    strain_j[:, i] = np.dot(F_j[:, m:n],(r_e_j[:, i] - f_cr_j[:, i] + f_sh_j[:, i]
-                                           - f_p_init[:, i] + f_p_rel_j[:, i]))
-    r_c_j[:, i] = np.dot(D_c_j[:, m:n], strain_j[:,i]) + f_cr_j[:,i] - f_sh_j[:, i]
-
-    e = 0
-    for j in range(0, len(tao)):
-        d = F_e_j_i[j, i] * r_c_j[:, i]
-        e = e + d
-    f_cr_j[:, i] = e
-    m += 2
-    n += 2
+# m = 0
+# n = 2
+# for i in range(0, len(t)):
+#     strain_j[:, i] = np.dot(F_j[:, m:n],(r_e_j[:, i] - f_cr_j[:, i] + f_sh_j[:, i]
+#                                            - f_p_init[:, i] + f_p_rel_j[:, i]))
+#     r_c_j[:, i] = np.dot(D_c_j[:, m:n], strain_j[:,i]) + f_cr_j[:,i] - f_sh_j[:, i]
+#
+#     e = 0
+#     for j in range(0, len(tao)):
+#         d = F_e_j_i[j, i] * r_c_j[:, i]
+#         e = e + d
+#     f_cr_j[:, i] = e
+#     m += 2
+#     n += 2
 
 #print(r_c_j)
 #print(f_cr_j)
