@@ -3,7 +3,7 @@ import math as math
 import csv
 
 
-# if user input needs to stored in a list
+# if user input needs to stored in a list #CF is this required?
 def get_multiple_input(input_text):
     inputs = []
     while True:
@@ -16,7 +16,7 @@ def get_multiple_input(input_text):
     return inputs
 
 
-# if only one value is input
+# if only one value is input #CF is this required?
 def get_single_input(input_text):
     i = input(input_text)
     while True:
@@ -340,9 +340,9 @@ def get_k6_steel(input_temp):
     return temp / 20
 
 
-# calculation of alpha1, transfer and service are taken care of in respective loops
+# calculation of alpha1, transfer and service are taken care of in respective loops #Note th=2A/ue
 def get_alpha1(area, ue):
-    th = area / ue
+    th = 2*area / ue
     return 0.8 + 1.2 * math.exp(-0.005 * th)
 
 
@@ -402,7 +402,7 @@ if __name__ == '__main__':
    #     fileinput += ".txt"
    # # Input: FYP_5.6_2.txt
 
-    with open('FYP_5.6_2.txt') as csvDataFile:
+    with open('FYP_5.6_3.txt') as csvDataFile:
         csvReader = csv.reader(csvDataFile)
         for row in csvReader:
             data = [row for row in csv.reader(csvDataFile)]
@@ -429,7 +429,10 @@ if __name__ == '__main__':
             n_s=float(data[10][2]) #modular ratio of reinforcing steel R12C3
             layers_p=int(data[12][1]) #layers of prestressing steel R14C2
             layers_s=int(data[11][1]) #layers of reinforcing steel R13C2
-            f_p_E_p=int(data[18][1]) #R20C2
+            f_p_E_p=np.zeros(layers_p)
+            for i in range(len(f_p_E_p)):
+                f_p_E_p[i]=int(data[18][i+1])
+            #f_p_E_p=int(data[18][1]) #R20C2
             p_p_init=int(data[19][1]) #R21C2
             f_p_A_p=np.zeros(layers_p)
             f_p_y_p_t=np.zeros(layers_p)
@@ -447,12 +450,18 @@ if __name__ == '__main__':
                 f_s_y_s_s[i] = int(data[24][1 + i])  # R26C2 and R26C3
             I_gross_t=int(data[25][1]) #R27C2
             I_gross_s=int(data[25][2]) #R27C3
-            f_p=int(data[26][1]) #R28C2
+            f_p=np.zeros(2)
+            for i in range(len(f_p)):
+                f_p[i]=int(data[26][i+1])
+            #f_p=int(data[26][1]) #R28C2
             sigma_p_init=int(data[27][1]) #R29C2
             rb_input=int(data[28][1]) #R30C2
             f_p_input=int(data[29][1]) #R31C2
             sigma_p_input=int(data[30][1]) #R32C2
             input_temp=int(data[31][1]) #R33C2
+            strands_n=np.zeros(layers_s)
+            for i in range(len(strands_n)):#R34C2 and R34C3
+                strands_n[i]=int(data[32][i+1])
         csvDataFile.close()
 
     ##Calculating the Tao values from the values input
@@ -563,11 +572,12 @@ if __name__ == '__main__':
 
     D_s = D_t + D_slab
 
-    f_p = [1000000, 1000000] # is now array input
-    f_p_E_p = [200000, 200000] # is now array input
+    #f_p = [1000000, 1000000] # is now array input
+    #f_p_E_p = [200000, 200000] # is now array input
     f_p_strain_p = get_strain_p(f_p, f_p_A_p, f_p_E_p)
+    
 
-    strands_n = [2, 2] # new input, is number of strands per row
+    #strands_n = [2, 2] # new input, is number of strands per row #number of prestressed strands?
     f_p_cent = get_f_p_cent(tao, f_p_A_p, strands_n, f_p_y_p_s, f_p_y_p_t)
     f_p_ecc = get_f_p_ecc(tao, f_p_cent, d_c_s, d_c_t)
 
