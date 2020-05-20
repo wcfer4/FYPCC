@@ -734,7 +734,7 @@ strain_sh_j_2 = strain_cse_2 + strain_shd_2
 strain_sh_j_2 = np.array([0,-200 * math.pow(10,-6),
                           -200 * math.pow(10,-6), -600 * math.pow(10,-6),])
 
-# J_t_tao, E_c_j, Feji
+# J_t_tao, E_c_j, Feji for slab
 J_t_tao_2 = get_J_t_tao(t_2, tao_2, E_c_tao_2, phi_t_tao_2)
 E_c_j_2 = get_E_c_j(t_2, tao_2, J_t_tao_2)
 F_e_j_i_2 = get_Fe_j_i(t_2, tao_2, J_t_tao_2)
@@ -786,24 +786,6 @@ def get_ABE_strain(AB_list, E_list, strain_list):
     output = AB_list * E_list * strain_list
     return output
 
-# def get_f_sh_j(t_list, t2_list, A_c_list, E_c_list, B_c_list, strain_list,
-#                A_c_list_2, E_c_list_2, B_c_list_2, strain_list_2):
-#     array = np.zeros((2, len(t_list)))
-#     for i in range(0,len(t_list)):
-#         if t_list[i] > t_comp:
-#             array[0, i] = get_ABE_strain(A_c_list[i], E_c_list[i], strain_list[i]) \
-#                           + get_ABE_strain(A_c_list_2[i - (len(t_list)-len(t2_list))],
-#                                            E_c_list_2[i - (len(t_list)-len(t2_list))],
-#                                            strain_list_2[i - (len(t_list)-len(t2_list))])
-#             array[1, i] = get_ABE_strain(B_c_list[i], E_c_list[i], strain_list[i]) \
-#                           + get_ABE_strain(B_c_list_2[i - (len(t_list)-len(t2_list))],
-#                                            E_c_list_2[i - (len(t_list)-len(t2_list))],
-#                                            strain_list_2[i - (len(t_list)-len(t2_list))])
-#         else:
-#             array[0, i] = get_ABE_strain(A_c_list[i], E_c_list[i], strain_list[i])
-#             array[1, i] = get_ABE_strain(B_c_list[i], E_c_list[i], strain_list[i])
-#     return array
-
 def get_f_sh_j(t_list, A_c_list, E_c_list, B_c_list, strain_list):
     array = np.zeros((2, len(t_list)))
     for i in range(0, len(t_list)):
@@ -830,8 +812,6 @@ post_f_sh_j_slab = get_f_sh_j_slab(t, t_2, A_c_2, E_c_tao_2, B_c_2, strain_sh_j_
 #                        [0, -7.3526e+08, -7.3526e+08, -7.3526e+08, -1.3285e+09, -1.3285e+09, -4.04235e+09]])
 
 
-
-
 def get_D_c_j(t_list, A_c_list, B_c_list, I_c_list, E_c_list):
     array = E_c_list[0] * np.array([[A_c_list[0], B_c_list[0]], [B_c_list[0], I_c_list[0]]])
     for i in range(1, len(t_list)):
@@ -847,13 +827,17 @@ f_cr_j = np.zeros((2, len(t)))
 r_c_j_1 = np.zeros((2, len(t)))
 f_set_j = np.zeros((2,len(t)))
 
-f_cr_j_2 = np.zeros((2, len(t_2)))
-r_c_j_2 = np.zeros((2, len(t_2)))
+f_cr_j_2 = np.zeros((2, len(t)))
+r_c_j_2 = np.zeros((2, len(t)))
+
 
 post_tension = 1 #hardcoded
 m = 0
 n = 2
+
 t = [7, 39, 39, 40, 60, 60, 30000]
+
+print(t_comp_2)
 f_set_c_slab = np.zeros((2, len(t)))
 f_set_c_grout = np.zeros((2, len(t)))
 f_set_j = np.zeros((2, len(t)))
@@ -863,16 +847,19 @@ E_c_conv_1 = get_E_c_conv(t, E_c_tao, t_check_1)
 t_check_2 = get_t_check(t_2, t_comp_2)
 E_c_conv_2 = get_E_c_conv(t_2, E_c_tao_2, t_check_2)
 
+
 for i in range(0, len(t)):
     output = 0
-
-    for j in range(0, len(tao)):
-        d = F_e_j_i[j, i] * r_c_j_1[:, j]
-        output = output + d
-    f_cr_j[:, i] = output
+    # for j in range(0, len(tao)):
+    #     d = F_e_j_i[j, i] * r_c_j_1[:, j]
+    #     output = output + d
+    # f_cr_j[:, i] = output
 
     if t[i] < t_comp_2: # reassigned t array to make it easier to work with, remove it later
-        # f_set_slab = 0
+        for j in range(0, len(tao)):
+            d = F_e_j_i[j, i] * r_c_j_1[:, j]
+            output = output + d
+        f_cr_j[:, i] = output
 
         a = (r_e_j[:, i] - f_cr_j[:, i] + post_f_sh_j[:, i] - f_p_init[:, i] + f_p_rel_j[:, i]).reshape(-1, 1)
         strain_j[:, i] = np.dot(post_F_j[:, m:n], a).reshape( 1, -1)
@@ -881,6 +868,10 @@ for i in range(0, len(t)):
         m = m + 2
         n = n + 2
     else: # whole array is replaced every iteration instead
+        for j in range(0, len(tao)):
+            d = F_e_j_i[j, i] * r_c_j_1[:, j] + F_e_j_i_2[j - (len(tao) - len(tao_2)), i - (len(tao) - len(tao_2))] * r_c_j_2[:, j - (len(tao) - len(tao_2))]
+            output = output + d
+        f_cr_j[:, i] = output
 
         f_set_p = get_f_set(t, t_comp_2, A_p, E_p, strain_j, y_p)  # prestress in element 1
         f_set_s_2 = get_f_set(t, t_comp_2, A_s_2, E_s_2, strain_j, y_s_2)  # steel in element 2
@@ -908,24 +899,16 @@ for i in range(0, len(t)):
 
         r_c_j_1[:, i] = np.dot(D_c_j[:, m:n], strain_j[:, i]) + f_cr_j[:, i] - post_f_sh_j[:, i]  - f_set_c_grout[:, i]
 
-        r_c_j_2[:, i - (len(t)-len(t_2))] = np.dot(D_c_j[:, m - 2*i:n - 2*i], strain_j[:, i]) + f_cr_j[:, i] - post_f_sh_j_slab[:, i] - f_set_c_slab[:, i]
-        # fix rcj2
+        r_c_j_2[:, i] = np.dot(D_c_j_2[:, m - 2*(len(t)-len(t_2)):n - 2*(len(t)-len(t_2))], strain_j[:, i]) + f_cr_j_2[:, i] - post_f_sh_j_slab[:, i] - f_set_c_slab[:, i]
+        r_c_j_2[:, 3] = [0, 0] # hardcoded, can remove
+
         m = m + 2
         n = n + 2
 
-print(r_c_j_1)
-print(r_c_j_2)
+print(strain_j)
 
 
 
 
-
-# aoa = [0,0,0,0,0,0,0]
-# print(len(aoa))
-# bob = np.zeros((2,7))
-# print(bob)
-# for i in range(0, len(aoa)):
-#     bob[:, i] = [50, 60]
-# print(bob)
 
 
