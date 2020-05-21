@@ -25,7 +25,7 @@ def get_single_input(input_text):
             break
     return i
 
-def get_f_p_init_N(t_list, strands_arr, p_force): #strand arrangement, prestress force
+def get_f_p_init_N(t_list, strands_arr, p_force): #strand arrangement, prestress force #HC
     N_array = []
     for i in range(0, len(t_list)):
         indiv_N = 0
@@ -34,7 +34,7 @@ def get_f_p_init_N(t_list, strands_arr, p_force): #strand arrangement, prestress
         N_array.append(indiv_N)
     return N_array
 
-def get_f_p_init_M(t_list, strands_arr, p_force, y_p_list): #strand arrangement, prestress force
+def get_f_p_init_M(t_list, strands_arr, p_force, y_p_list): #strand arrangement, prestress force #HC
     M_array = []
     for i in range(0, len(t_list)):
         indiv_M = 0
@@ -52,18 +52,18 @@ def get_f_p_rel(fpi_n, fpi_m, phi_p_steel_array):
     rel = np.array([N_array, M_array], dtype=np.float64)
     return rel
 
-def get_r_b_steel(rb_input):
-    rb_type = {0: (2 / 100), 1: (2.5 / 100), 2: (4 / 100)} #create a dictionary for values
+def get_r_b_steel(rb_input):#HC
+    rb_type = {0: (2 / 100), 1: (2.5 / 100), 2: (4 / 100)}
     return rb_type[rb_input]
 
-def get_k4_steel(t_list):
+def get_k4_steel(t_list): #HC
     k4s_total = []
     for i in range(0,len(t_list)):
-        k4s = math.log10(5.4 * math.pow(t_list[i], 1/6 ))
+        k4s = math.log10(5.4 * math.pow(t_list[i], 1.6 ))
         k4s_total.append(k4s)
     return k4s_total
 
-def get_k5_steel(break_str, jack_str, rb_steel):
+def get_k5_steel(break_str, jack_str, rb_steel): #HC
     gamma = jack_str / break_str
     if gamma < 0.4:
         k5_i = 0
@@ -73,25 +73,24 @@ def get_k5_steel(break_str, jack_str, rb_steel):
         if rb_steel == 0.02 or 0.025:
             k5_i = 5 * gamma - 2.5 #low relaxation wire or low relaxation strand
         else:
-            k5_i = (50 * gamma) / 6 #Alloy Steel bars
+            k5_i = (50 * gamma-29) / 6 #Alloy Steel bars
     return k5_i
 
-def get_k6_steel(input_temp):
+def get_k6_steel(input_temp): #HC
     temp = 20
     i = input_temp
     if i != "":
         temp = int(i)
     return temp / 20
 
-def get_E_c(f_cmi_input, density_conc):
-    #f_cmi_input = get_single_input("Enter mean in-situ compressive strength (MPa): ")
+def get_E_c(f_cmi_input, density_conc): #HC
     if f_cmi_input <= 40:
         E_c = math.pow(density_conc, 1.5) * 0.043 * math.sqrt(f_cmi_input)
     else:
         E_c = math.pow(density_conc, 1.5) * (0.024 * math.sqrt(f_cmi_input) + 0.12)
     return E_c
 
-def get_E_c_tao_2_t(t2_array, t_slab_pour):
+def get_E_c_tao_2_t(t2_array, t_slab_pour): #HC
     array = []
     for i in range(0, len(t2_array)):
         output = t2_array[i] - t_slab_pour
@@ -102,7 +101,7 @@ def get_E_c_tao_2_t(t2_array, t_slab_pour):
         array.append(output)
     return array
 
-def get_s(s_key):
+def get_s(s_key): #HC
     while True:
         if s_key == 0:
             s = 0.38
@@ -114,26 +113,26 @@ def get_s(s_key):
             print("Enter 0 or 1")
     return s
 
-def get_E_c_tao(t_list, s_value, E_c_value):
+def get_E_c_tao(t_list, s_value, E_c_value): #Check with Colin/Mayer Ec_value
     E_c_array = []
-    for i in range(0, len(t_list)):
+    for i in range(0, len(t_list)): #Is E_c_value Ec at 28 days? or at tao0?
         E_c_array.append(math.pow(math.exp(s_value * (1 - math.sqrt(28 / t_list[i]))), 0.5) * E_c_value)
     return E_c_array
 
-def get_th(area, ue):
+def get_th(area, ue): #HC
     return 2*area / ue
 
-def get_alpha2(area, ue):
+def get_alpha2(area, ue): #HC
     th = 2 * area / ue
     return 1 + 1.12 * math.exp(-0.008 * th)
 
-def get_k2_value(area, ue, t_list, tao_list):
+def get_k2_value(area, ue, t_list, tao_list): #HC
     alpha2_value = get_alpha2(area, ue)
     th_value = get_th(area,ue)
     return (alpha2_value * math.pow(t_list - tao_list, 0.8))/ (math.pow(t_list - tao_list, 0.8)+ 0.15 * th_value)
 
 
-def get_k2(t_list,tao_list, area, ue): #handchecked
+def get_k2(t_list,tao_list, area, ue): #HC
     k2 = np.zeros((len(tao_list), len(t_list)))
     for i in range(len(tao_list)):
         for j in range(len(t_list)):
@@ -147,23 +146,23 @@ def get_k2(t_list,tao_list, area, ue): #handchecked
                 k2[i, j] = get_k2_value(area, ue, t_list[j], tao_list[i])
     return k2
 
-def get_k3(tao_list):
+def get_k3(tao_list): #HC
     k3_array = np.zeros((len(tao_list), 1))
     for i in range(len(tao_list)):
         k3_array[i, 0] = 2.7/ (1 + math.log10(tao_list[i]))
     return k3_array
 
-def get_k4(k4_key):
-    environment_type = {0: 0.7, 1: 0.65, 2: 0.6, 3: 0.5} #Create a Dictionary for environment types
+def get_k4(k4_key): #HC
+    environment_type = {0: 0.7, 1: 0.65, 2: 0.6, 3: 0.5}
     return environment_type[k4_key]
 
-def get_k5_value(f_c_key, area, ue):
+def get_k5_value(f_c_key, area, ue): #HC
     alpha2 = get_alpha2(area, ue)
     alpha3 = 0.7 / (k4 * alpha2)
     k5_value = (2 - alpha3) - 0.02 * (1 - alpha3) * f_c_key
     return k5_value
 
-def get_k5(f_c_key, t_list, area, ue):
+def get_k5(f_c_key, t_list, area, ue): #HC
     k5_array = []
     if f_c_key <= 50:
         k5_output = np.ones((1, len(t_list)))
@@ -173,7 +172,7 @@ def get_k5(f_c_key, t_list, area, ue):
         k5_output = np.array(k5_array)
     return k5_output
 
-def get_phi_basic(f_c_key):
+def get_phi_basic(f_c_key): #HC
     creep_basic_array = np.array(
         [[20, 4.5], [25, 3.8], [32, 3], [40, 2.4], [50, 2], [65, 1.7], [80, 1.5], [100, 1.3]])
     for i in range(len(creep_basic_array)):
@@ -190,14 +189,14 @@ def get_phi_basic(f_c_key):
                 break
     return p_b_output
 
-def get_strain_cse(f_c_key, t_list):
+def get_strain_cse(f_c_key, t_list): #HC
     cse_array = []
     cse_star = (0.06 * f_c_key - 1) * 50 * math.pow(10, -6)
     for i in range(0, len(t_list)):
         cse_array.append(cse_star * (1 - math.exp(-0.1 * t_list[i])))
     return cse_array
 
-def get_strain_shd_b_star():
+def get_strain_shd_b_star(): #HC
     strain_input = get_single_input("Aggregate quality: good = 0, unknown = 1: ")
     if strain_input == 0:
         shd = 800 * math.pow(10, -6)
@@ -207,18 +206,18 @@ def get_strain_shd_b_star():
         print("Enter a valid number")
     return shd
 
-def get_alpha1(area, ue):
-    th = area / ue
+def get_alpha1(area, ue):#HC
+    th = 2*area / ue
     return 0.8 + 1.2 * math.exp(-0.005 * th)
 
 
-def get_k1_value(area, ue, t, tao_d):
-    th = area / ue
+def get_k1_value(area, ue, t, tao_d):#HC
+    th = 2*area / ue
     a1 = get_alpha1(area, ue)
     output = (a1 * math.pow(t - tao_d, 0.8))/ (math.pow(t - tao_d, 0.8) + 0.15 * th)
     return output
 
-def get_k1(t_list, area, ue, tao_dry):
+def get_k1(t_list, area, ue, tao_dry): #HC
     # k1_array = np.zeros((1, len(t_list)))
     array = []
     for i in range(0, len(t_list)):
@@ -226,14 +225,17 @@ def get_k1(t_list, area, ue, tao_dry):
             array.append(get_k1_value(area, ue, t_list[i], tao_dry))
     return array
 
-def get_J_t_tao(t_list,tao_list, E_c_tao_array, phi_t_tao_array): #Note E_c_tao is dependant on time so refers to j #handchecked
+def get_J_t_tao(t_list,tao_list, E_c_tao_array, phi_t_tao_array): #HC
     J_array = np.zeros((len(tao_list), len(t_list)))
     for i in range(0, len(tao_list)):
         for j in range(0, len(t_list)):
             if tao_list[i] > t_list[j] : # loading > time
                 J_array[i, j] = 0
             else: # time >= loading
-                J_array[i, j] = (1 / E_c_tao_array[i]) * (1 + phi_t_tao_array[i, j])
+                for a in range(len(t_list)): #When does tao value appear in t_list array as E_c_tao is length of t
+                    if tao_list[i]==t_list[a]:
+                        J_array[i, j] = (1 / E_c_tao_array[a]) * (1 + phi_t_tao_array[i, j])
+                        break
     return J_array
 
 def get_E_c_j(t_list, tao_list, J_t_tao_array):
@@ -258,7 +260,7 @@ def get_E_c_j(t_list, tao_list, J_t_tao_array):
                 break
     return E_c_j_array
 
-def get_Fe_j_i(t_list, tao_list, J_t_tao_array):
+def get_Fe_j_i(t_list, tao_list, J_t_tao_array): #Double Check Calcs with Calvin - Code matches calcs
     Fe_j_i = np.zeros((len(tao_list), len(t_list)))
     for j in range(0, len(t_list)):
         for tao_ip in range(0, len(tao_list)):
@@ -297,7 +299,7 @@ def post_get_A_c(t_list, t_grout, area, d_duct, strands_arr, A_s_list, A_p_list)
     output = np.array(ac_array)
     return output
 
-def pre_get_A_c(t_list, area, A_s_list, A_p_list):
+def pre_get_A_c(t_list, area, A_s_list, A_p_list): #HC
     ac_array = []
     for i in range(0, len(t_list)):
         a = area - sum(A_s_list) - sum(A_p_list)
@@ -305,14 +307,14 @@ def pre_get_A_c(t_list, area, A_s_list, A_p_list):
     output = np.array(ac_array)
     return output
 
-def get_A_by_y(A_list, y_list, d_ref): #Used for S and P for sum of total layers
+def get_A_by_y(A_list, y_list, d_ref): #Used for S and P for sum of total layers #HC
     B_mod = 0
     for i in range(0, len(A_list)):
         B_mod += A_list[i] * (y_list[i] - d_ref)
     return B_mod
 
 def post_get_B_c(t_list, t_grout, area, d_cent, d_ref, d_duct, A_s_list, y_s_list,
-                 A_p_list, y_p_list):
+                 A_p_list, y_p_list): #HC
     bc_array = []
     for i in range(0, len(t_list)):
         if t_list[i] >= t_grout: ## once grout is added
@@ -328,7 +330,7 @@ def post_get_B_c(t_list, t_grout, area, d_cent, d_ref, d_duct, A_s_list, y_s_lis
     return output
 
 def pre_get_B_c(t_list, area, d_cent, d_ref, A_s_list, y_s_list,
-                 A_p_list, y_p_list):
+                 A_p_list, y_p_list): #HC
     bc_array = []
     for i in range(0, len(t_list)):
         b = area * (d_cent - d_ref) \
@@ -338,7 +340,7 @@ def pre_get_B_c(t_list, area, d_cent, d_ref, A_s_list, y_s_list,
     output = np.array(bc_array)
     return output
 
-def get_A_by_y2(A_list, y_list, d_ref): #Used for S and P for sum of total layers
+def get_A_by_y2(A_list, y_list, d_ref): #Used for S and P for sum of total layers #HC
     I_mod = 0
     for i in range(0, len(A_list)):
         I_mod += A_list[i] * ((y_list[i] - d_ref) ** 2)
@@ -361,7 +363,7 @@ def post_get_I_c(I_g, t_list, t_grout, area, d_cent, d_ref, d_duct, A_s_list, y_
     return output
 
 def pre_get_I_c(I_g, t_list, area, d_cent, d_ref, A_s_list, y_s_list,
-                 A_p_list, y_p_list):
+                 A_p_list, y_p_list): #HC
     ic_array = []
     for i in range(0, len(t_list)):
         ic = I_g + area * (d_cent - d_ref)**2 \
@@ -371,7 +373,7 @@ def pre_get_I_c(I_g, t_list, area, d_cent, d_ref, A_s_list, y_s_list,
     output = np.array(ic_array)
     return output
 
-def get_A_c_slab(t_list, t_comp, area, A_s_list, A_p_list):
+def get_A_c_slab(t_list, t_comp, area, A_s_list, A_p_list): #HC
     ac_array = []
     for i in range(0, len(t_list)):
         if t_list[i] < t_comp:
@@ -383,7 +385,7 @@ def get_A_c_slab(t_list, t_comp, area, A_s_list, A_p_list):
     return output
 
 def get_B_c_slab(t_list, t_comp, area, d_cent, d_ref, A_s_list, y_s_list,
-                 A_p_list, y_p_list):
+                 A_p_list, y_p_list): #CK
     bc_array = []
     for i in range(0, len(t_list)):
         if t_list[i] < t_comp: # slab does not contribute since no comp action
@@ -397,7 +399,7 @@ def get_B_c_slab(t_list, t_comp, area, d_cent, d_ref, A_s_list, y_s_list,
     return output
 
 def get_I_c_slab(I_g, t_list, t_comp, area, d_cent, d_ref, A_s_list, y_s_list,
-                 A_p_list, y_p_list):
+                 A_p_list, y_p_list): #CK
     ic_array = []
     for i in range(0, len(t_list)):
         if t_list[i] < t_comp:
@@ -424,7 +426,7 @@ def get_R_A_j(t_list, t2_list, t_comp, A_c_list, E_c_list, A_c_list_2, E_c_list_
               A_s_list, E_s_list, A_s_list_2, E_s_list_2, A_p_list, E_p_list):
     array = np.zeros(len(t_list))
     for i in range(0, len(t_list)):
-        if t_list[i] >= t_comp:
+        if t_list[i] >= t_comp: #Are we removing A_P_list_2? - even though we are taking it as zero
             array[i] = get_ABI_E(A_c_list[i], E_c_list[i]) \
                        + get_ABI_E(A_c_list_2[i - (len(t_list)-len(t2_list))], E_c_list_2[i - (len(t_list)-len(t2_list))]) \
                        + get_AE(A_s_list, E_s_list) + get_AE(A_s_list_2, E_s_list_2) \
@@ -561,14 +563,58 @@ def get_E_c_conv(t_list, E_c_list, t_check_list):
             break
     return array
 
+# create Fj
+def get_F_j(t_list, Ra, Rb, Ri):
+    fj_a = []
+    fj_b = []
+    fj_i = []
+    for i in range(0, len(t_list)):
+        p = 1/(Ra[i] * Ri[i] - Rb[i] ** 2)
+        fj_a.append(p * Ra[i])
+        fj_b.append(p * Rb[i])
+        fj_i.append(p * Ri[i])
+    array = np.array([[fj_i[0], -fj_b[0]], [-fj_b[0], fj_a[0]]])
+
+    for i in range(1, len(t_list)):  # appending 2 x 2 arrays for original 2x2 Fj array
+        a = np.array([[fj_i[i], -fj_b[i]], [-fj_b[i], fj_a[i]]])
+        array = np.concatenate((array, a), axis=1)
+    return array
+
+def get_ABE_strain(AB_list, E_list, strain_list):
+    output = AB_list * E_list * strain_list
+    return output
+
+def get_f_sh_j(t_list, A_c_list, E_c_list, B_c_list, strain_list): #CK
+    array = np.zeros((2, len(t_list)))
+    for i in range(0, len(t_list)):
+        array[0, i] = get_ABE_strain(A_c_list[i], E_c_list[i], strain_list[i])
+        array[1, i] = get_ABE_strain(B_c_list[i], E_c_list[i], strain_list[i])
+    return array
+
+def get_f_sh_j_slab(t_list, t2_list, A_c_list, E_c_list, B_c_list, strain_list): #Ck
+    array = np.zeros((2, len(t2_list)))
+    for i in range(0, len(t2_list)):
+        array[0, i] = get_ABE_strain(A_c_list[i], E_c_list[i], strain_list[i])
+        array[1, i] = get_ABE_strain(B_c_list[i], E_c_list[i], strain_list[i])
+    start = np.zeros((2, len(t_list) - len(t2_list)))
+    array = np.concatenate((start, array), axis = 1)
+    return array
+
+def get_D_c_j(t_list, A_c_list, B_c_list, I_c_list, E_c_list): #CK
+    array = E_c_list[0] * np.array([[A_c_list[0], B_c_list[0]], [B_c_list[0], I_c_list[0]]])
+    for i in range(1, len(t_list)):
+        a = E_c_list[i] * np.array([[A_c_list[i], B_c_list[i]], [B_c_list[i], I_c_list[i]]])
+        array = np.concatenate((array, a), axis=1)
+    return array
+
 if __name__ == '__main__':
-    tao = [7, 40, 60, 30000] # hardcoded
-    t = [7, 38, 39, 40, 60, 61, 30000, 40000]   # hardcoded
+    tao = [7, 40, 60, 200,30000] # hardcoded #will this be input by user?
+    t = [7, 40, 60, 61,200, 30000]   # hardcoded #willneedtobe iterated
 
 # steel reinf material properties
 # moduli
-E_s = [200000, 200000]        #hardcoded
-E_p = [200000, 200000]          #hardcoded
+E_s = [200000, 200000]        #hardcoded - need to change for length of array = number of re-steel in girder
+E_p = [200000, 200000]          #hardcoded - need to change for length of array = number of pre-steel in girder
 
 # strain in steel at each t
 f_p_steel = 1800    #hardcoded
@@ -576,15 +622,14 @@ sigma_jack = 1000   #hardcoded
 rb_input = 1        #hardcoded
 temp_input = 25     #hardcoded
 
-r_b_steel = get_r_b_steel(rb_input)
-k4_steel = np.array(get_k4_steel(t))
-k5_steel = get_k5_steel(f_p_steel, sigma_jack, r_b_steel)
-k6_steel = get_k6_steel(temp_input)
+r_b_steel = get_r_b_steel(rb_input) #HC
+k4_steel = np.array(get_k4_steel(t)) #HC
+k5_steel = get_k5_steel(f_p_steel, sigma_jack, r_b_steel) #HC
+k6_steel = get_k6_steel(temp_input) #HC
+R_steel = k4_steel * k5_steel * k6_steel * r_b_steel #HC
+phi_p_steel = R_steel / (1 - R_steel) #HC
 
-R_steel = k4_steel * k5_steel * k6_steel * r_b_steel
-phi_p_steel = R_steel / (1 - R_steel)
 
-# phi_p_steel = np.array([0, 0.015, 0.015, 0.015, 0.02, 0.02, 0.03]) # hardcoded for example
 
 # concrete element 1 - material properties
 # E_c_tao calculation - p, fcmi, s
@@ -592,13 +637,10 @@ p_conc = 2400       #hardcoded
 f_cmi_input = 50    #hardcoded
 s_input = 0         #hardcoded
 
-E_c = get_E_c(f_cmi_input, p_conc)
-s = get_s(s_input)
-E_c_tao = get_E_c_tao(t, s, E_c)
+E_c = get_E_c(f_cmi_input, p_conc) #HC
+s = get_s(s_input) #HC
+E_c_tao = get_E_c_tao(t, s, E_c) #HC
 
-# E_c_tao = np.array([25 * math.pow(10, 3), 32 * math.pow(10, 3), 32 * math.pow(10, 3),
-#                     32 * math.pow(10, 3), 34 * math.pow(10, 3), 34 * math.pow(10, 3),
-#                     38 * math.pow(10, 3)]) # hardcoded
 
 # phi_t_tao calculation - k2, k3, k4, k5, phi_basic
 k4_input = 0    #hardcoded
@@ -606,26 +648,18 @@ f_c_input = 60  #hardcoded
 area_1 = 317000 #hardcoded
 ue_1 = 2200     #hardcoded
 
-k2 = get_k2(t, tao, area_1, ue_1)
-k3 = get_k3(tao)
-k4 = get_k4(k4_input)
-k5 = get_k5(f_c_input, t, area_1, ue_1)
-phi_basic = get_phi_basic(f_c_input)
+k2 = get_k2(t, tao, area_1, ue_1) #HC
+k3 = get_k3(tao) #HC
+k4 = get_k4(k4_input) #HC
+k5 = get_k5(f_c_input, t, area_1, ue_1) #HC
+phi_basic = get_phi_basic(f_c_input) #HC
 
-phi_t_tao = k2 * k3 * k4 * k5 * phi_basic
-# phi_t_tao = np.array([[0, 0.8, 0.8, 0.8, 1, 1, 2.5],
-#                       [0, 0, 0, 0, 0.8, 0.8, 1.8],
-#                       [0, 0, 0, 0, 0.8, 0.8, 1.8],
-#                       [0, 0, 0, 0, 0.8, 0.8, 1.8],
-#                       [0, 0, 0, 0, 0, 0, 1.6],
-#                       [0, 0, 0, 0, 0, 0, 1.6],
-#                       [0, 0, 0, 0, 0, 0, 0]]) # hardcoded
+phi_t_tao = k2 * k3 * k4 * k5 * phi_basic #HC
 
 # J_t_tao, E_c_j, Feji
-J_t_tao = get_J_t_tao(t, tao, E_c_tao, phi_t_tao)
-E_c_j = get_E_c_j(t, tao, J_t_tao)
-F_e_j_i = get_Fe_j_i(t, tao, J_t_tao)
-
+J_t_tao = get_J_t_tao(t, tao, E_c_tao, phi_t_tao) #HC
+E_c_j = get_E_c_j(t, tao, J_t_tao) #HC
+F_e_j_i = get_Fe_j_i(t, tao, J_t_tao) #Check Calcs with Calvin - Code matches calcs
 
 # shrinkage strain over time
 strain_cse = get_strain_cse(f_c_input, t)
@@ -633,32 +667,31 @@ strain_cse = get_strain_cse(f_c_input, t)
 strain_shd_b_star = 0.0008 # hard coded
 strain_shd_b = (1 - 0.008 * f_c_input) * strain_shd_b_star
 
-tao_dry_1 = 7 # hard coded - should be 1 x n where n is number of components
-k1 = np.array(get_k1(t, area_1, ue_1, tao_dry_1))
-strain_shd = k1 * k4 * strain_shd_b
 
-strain_sh_j = strain_cse + strain_shd
-# strain_sh_j = np.array([0, -100 * math.pow(10, -6), -100 * math.pow(10, -6),
-#                         -100 * math.pow(10, -6), -150 * math.pow(10, -6),
-#                         -150 * math.pow(10, -6), -400 * math.pow(10, -6)]) # hardcoded
+tao_dry_1 = 7 # hard coded - should be 1 x n where n is number of components
+k1 = np.array(get_k1(t, area_1, ue_1, tao_dry_1)) #HC
+strain_shd = k1 * k4 * strain_shd_b #HC
+
+strain_sh_j = strain_cse + strain_shd #HC
+
 
 # prestress information
 P_p_init = 1000000 #hardcoded, force per strand
 n_strands = np.array([1, 1], dtype=np.float64) # hardcoded, strands per row
 y_p = [1030, 1160] #hardcoded, prestress distance from very top
 
-f_p_init_N = get_f_p_init_N(t, n_strands, P_p_init)
-f_p_init_M = get_f_p_init_M(t, n_strands, P_p_init, y_p)
-f_p_init = np.array([f_p_init_N, f_p_init_M])
+f_p_init_N = get_f_p_init_N(t, n_strands, P_p_init) #HC
+f_p_init_M = get_f_p_init_M(t, n_strands, P_p_init, y_p) #HC
+f_p_init = np.array([f_p_init_N, f_p_init_M]) #HC
 
+f_p_rel_j = get_f_p_rel(f_p_init_N, f_p_init_M, phi_p_steel) #HC
 
-f_p_rel_j = get_f_p_rel(f_p_init_N, f_p_init_M, phi_p_steel)
 
 t_grout = 40    ## hardcoded, is when grout is added
 t_comp = 40    ## hardcoded, is when the grout and deck is set so comp action is achieved
 
 # Ac, Bc, Ic of section variables required
-A_s = [900, 1800]       # hardcoded
+A_s = [900, 1800]       # hardcoded #reinforced steel in
 A_p = [800, 800]        # hardcoded
 y_s = [210, 1240]           # hardcoded: y_p is above under prestress properties
 diam_duct = 60              # hardcoded
@@ -666,26 +699,19 @@ d_c = 752                   # hardcoded
 d_ref = 0                   # hardcoded
 i_gross = 49900 * 10 ** 6   # hardcoded
 
-pre_A_c = pre_get_A_c(t, area_1, A_s, A_p)
-pre_B_c = pre_get_B_c(t, area_1, d_c, d_ref, A_s, y_s, A_p, y_p)
-pre_I_c = pre_get_I_c(i_gross, t, area_1, d_c, d_ref, A_s, y_s, A_p, y_p)
+pre_A_c = pre_get_A_c(t, area_1, A_s, A_p) #HC
+pre_B_c = pre_get_B_c(t, area_1, d_c, d_ref, A_s, y_s, A_p, y_p) #HC
+pre_I_c = pre_get_I_c(i_gross, t, area_1, d_c, d_ref, A_s, y_s, A_p, y_p) #HC
 
-post_A_c = post_get_A_c(t, t_grout, area_1, diam_duct, n_strands, A_s, A_p)
-post_B_c = post_get_B_c(t, t_grout, area_1, d_c, d_ref, diam_duct, A_s, y_s, A_p, y_p)
-post_I_c = post_get_I_c(i_gross, t, t_grout, area_1, d_c, d_ref, diam_duct, A_s, y_s, A_p, y_p)
-
-# post_A_c = np.array([308645.13, 308645.13, 308645.13,
-#                      312700, 312700, 312700, 312700]) # hardcoded
-# post_B_c = np.array([2.2977e+08, 2.2977e+08, 2.2977e+08,
-#                      2.3421e+08, 2.3421e+08, 2.3421e+08, 2.3421e+08 ]) # hardcoded
-# post_I_c = np.array([2.1955e+11, 2.1955e+11, 2.1955e+11,
-#                      2.2443e+11, 2.2443e+11, 2.2443e+11, 2.2443e+11]) # hardcoded
+post_A_c = post_get_A_c(t, t_grout, area_1, diam_duct, n_strands, A_s, A_p) #HC
+post_B_c = post_get_B_c(t, t_grout, area_1, d_c, d_ref, diam_duct, A_s, y_s, A_p, y_p) #HC
+post_I_c = post_get_I_c(i_gross, t, t_grout, area_1, d_c, d_ref, diam_duct, A_s, y_s, A_p, y_p) #HC
 
 # concrete element 2 - material properties
 
-t_comp_2 = 40
-t_2 = [40, 60, 61, 30000]       # hardcoded - t array but only show post slab pour times
-tao_2 = [40, 60, 30000]
+t_comp_2 = 40 #time that concrete is pured eg addition of slab
+t_2 = [40, 60, 61,200,30000]       # hardcoded - t array but only show post slab pour times
+tao_2 = [40, 60,200, 30000] #Tao values after slab is poured
 t_grout_2 = 40
 area_2 = 360000
 ue_2 = 3500     #hardcoded
@@ -707,14 +733,12 @@ p_conc_2 = 2400       #hardcoded
 f_cmi_input_2 = 50    #hardcoded
 s_input_2 = 0         #hardcoded
 
-E_c_2 = get_E_c(f_cmi_input_2, p_conc_2)
-s_2 = get_s(s_input_2)
+E_c_2 = get_E_c(f_cmi_input_2, p_conc_2) #HC
+s_2 = get_s(s_input_2) #HC
 
 t_slab = 40 # need this to find E_c_tao_2 (slab)
-E_c_tao_2_t = get_E_c_tao_2_t(t_2, t_slab) ## array containing days since slab pour
-E_c_tao_2 = get_E_c_tao(E_c_tao_2_t, s_2, E_c_2)
-# E_c_tao_2 = np.array([18 * math.pow(10, 3), 25 * math.pow(10, 3),
-#                       25 * math.pow(10, 3), 30 * math.pow(10, 3)]) # hardcoded
+E_c_tao_2_t = get_E_c_tao_2_t(t_2, t_slab) ## array containing days since slab pour #HC
+E_c_tao_2 = get_E_c_tao(E_c_tao_2_t, s_2, E_c_2) #HC
 
 k2_2 = get_k2(t_2, tao_2, area_2, ue_2)
 k3_2 = get_k3(tao_2)
@@ -723,11 +747,6 @@ k5_2 = get_k5(f_c_input_2, t_2, area_2, ue_2)
 phi_basic_2 = get_phi_basic(f_c_input_2)
 phi_t_tao_2 = k2_2 * k3_2 * k4_2 * k5_2 * phi_basic_2
 
-# phi_t_tao_2 = np.array([[0, 2, 2, 3.5],
-#                       [0, 0, 0, 2.8],
-#                       [0, 0, 0, 2.8],
-#                       [0, 0, 0, 0]]) # hardcoded
-
 # shrinkage strain over time
 strain_cse_2 = get_strain_cse(f_c_input_2, t_2)
 
@@ -735,99 +754,46 @@ strain_cse_2 = get_strain_cse(f_c_input_2, t_2)
 strain_shd_b_star_2 = 0.0008 # hard coded
 strain_shd_b_2 = (1 - 0.008 * f_c_input_2) * strain_shd_b_star_2
 
-tao_dry_2 = 7 # hard coded - should be 1 x n where n is number of components
+tao_dry_2 = 7 # hard coded - should be 1 x n where n is number of components #CK
 k1_2 = np.array(get_k1(t_2, area_2, ue_2, tao_dry_2))
 strain_shd_2 = k1_2 * k4_2 * strain_shd_b
 strain_sh_j_2 = strain_cse_2 + strain_shd_2
 
-# strain_sh_j_2 = np.array([0,-200 * math.pow(10,-6),
-#                           -200 * math.pow(10,-6), -600 * math.pow(10,-6),])
 
-# J_t_tao, E_c_j, Feji for slab
+# J_t_tao, E_c_j, Feji for slab #CK
 J_t_tao_2 = get_J_t_tao(t_2, tao_2, E_c_tao_2, phi_t_tao_2)
 E_c_j_2 = get_E_c_j(t_2, tao_2, J_t_tao_2)
 F_e_j_i_2 = get_Fe_j_i(t_2, tao_2, J_t_tao_2)
 
-# slab (2) Ac, Bc and Ic is not affected by post/pre (no grout in slab)
+# slab (2) Ac, Bc and Ic is not affected by post/pre (no grout in slab) #CK - Note will area be calc of input?
 # will be 0 if composite action is not available at t
 A_c_2 = get_A_c_slab(t_2, t_comp_2, area_2, A_s_2, A_p_2)
 B_c_2 = get_B_c_slab(t_2, t_comp_2, area_2, d_c_2, d_ref, A_s_2, y_s_2, A_p_2, y_p_2)
 I_c_2 = get_I_c_slab(i_gross_2, t_2, t_comp_2, area_2, d_c_2, d_ref, A_s_2, y_s_2, A_p_2, y_p_2)
 
-# A_c_2 = np.array([357300, 357300, 357300, 357300])
-# B_c_2 = np.array([26797500, 26797500, 26797500, 26797500])
-# I_c_2 = np.array([2684812500, 2684812500, 2684812500, 2684812500])
+
 
 # cross sectional rigidities
 # post because post_A_c, if want pre, use pre_A_c
 post_R_A_j = get_R_A_j(t, t_2, t_comp_2, post_A_c, E_c_tao, A_c_2, E_c_tao_2, A_s, E_s, A_s_2, E_s_2, A_p, E_p)
-# post_R_A_j = np.array([8.2561e+09, 1.0417e+10, 1.0417e+10, 1.7838e+10, 2.0964e+10, 2.0964e+10, 2.4002e+10]) # hardcoded
 post_R_B_j = get_R_B_j(t, t_2, t_comp_2, post_B_c, E_c_tao, B_c_2, E_c_tao_2, y_s, A_s, E_s, y_s_2, A_s_2, E_s_2, y_p, A_p, E_p)
-# post_R_B_j = np.array([6.2284e+12, 7.8368e+12, 7.8368e+12, 8.8522e+12, 9.5082e+12, 9.5082e+12, 1.0579e+13]) # hardcoded
 post_R_I_j = get_R_I_j(t, t_2, t_comp_2, post_I_c, E_c_tao, I_c_2, E_c_tao_2, y_s, A_s, E_s, y_s_2, A_s_2, E_s_2, y_p, A_p, E_p)
-# post_R_I_j = np.array([6.0502e+15, 7.58710e+15, 7.5871e+15, 8.1796e+15, 8.6473e+15, 8.6473e+15, 9.5584e+15])
 
 
-r_e_j = np.array([[0, 0, 0, 0, 0, 0, 0],
+r_e_j = np.array([[0, 0, 0, 0, 0, 0, 0,0,0],
                   [550 * math.pow(10,6), 550 * math.pow(10,6),
                    1170 * math.pow(10,6), 1170 * math.pow(10,6), 1170 * math.pow(10,6),
-                   1570 * math.pow(10,6), 1570 * math.pow(10,6)]]) #hardcoded
+                   1570 * math.pow(10,6),1800 * math.pow(10,6),1800 * math.pow(10,6), 1800 * math.pow(10,6)]]) #hardcoded
 
-# create Fj
-def get_F_j(t_list, Ra, Rb, Ri):
-    fj_a = []
-    fj_b = []
-    fj_i = []
-    for i in range(0, len(t_list)):
-        p = 1/(Ra[i] * Ri[i] - Rb[i] ** 2)
-        fj_a.append(p * Ra[i])
-        fj_b.append(p * Rb[i])
-        fj_i.append(p * Ri[i])
-    array = np.array([[fj_i[0], -fj_b[0]], [-fj_b[0], fj_a[0]]])
 
-    for i in range(1, len(t_list)):  # appending 2 x 2 arrays for original 2x2 Fj array
-        a = np.array([[fj_i[i], -fj_b[i]], [-fj_b[i], fj_a[i]]])
-        array = np.concatenate((array, a), axis=1)
-    return array
 
 post_F_j = get_F_j(t, post_R_A_j, post_R_B_j, post_R_I_j)
-
-def get_ABE_strain(AB_list, E_list, strain_list):
-    output = AB_list * E_list * strain_list
-    return output
-
-def get_f_sh_j(t_list, A_c_list, E_c_list, B_c_list, strain_list):
-    array = np.zeros((2, len(t_list)))
-    for i in range(0, len(t_list)):
-        array[0, i] = get_ABE_strain(A_c_list[i], E_c_list[i], strain_list[i])
-        array[1, i] = get_ABE_strain(B_c_list[i], E_c_list[i], strain_list[i])
-    return array
-
-def get_f_sh_j_slab(t_list, t2_list, A_c_list, E_c_list, B_c_list, strain_list):
-    array = np.zeros((2, len(t2_list)))
-    for i in range(0, len(t2_list)):
-        array[0, i] = get_ABE_strain(A_c_list[i], E_c_list[i], strain_list[i])
-        array[1, i] = get_ABE_strain(B_c_list[i], E_c_list[i], strain_list[i])
-    start = np.zeros((2, len(t_list) - len(t2_list)))
-    array = np.concatenate((start, array), axis = 1)
-    return array
 
 post_f_sh_j = get_f_sh_j(t, post_A_c, E_c_tao, post_B_c, strain_sh_j)
 post_f_sh_j_slab = get_f_sh_j_slab(t, t_2, A_c_2, E_c_tao_2, B_c_2, strain_sh_j_2)
 
 # for pre, use pre_A_c etc
-# post_f_sh_j = get_f_sh_j(t, t_2, post_A_c, E_c_tao, post_B_c, strain_sh_j,
-#                A_c_2, E_c_tao_2, B_c_2, strain_sh_j_2)
-# post_f_sh_j = np.array([[0, -9.8766e+05, -9.8766e+05, -9.8766e+05, -3.3813e+06, -3.3813e+06, -1.1184e+07],
-#                        [0, -7.3526e+08, -7.3526e+08, -7.3526e+08, -1.3285e+09, -1.3285e+09, -4.04235e+09]])
 
-
-def get_D_c_j(t_list, A_c_list, B_c_list, I_c_list, E_c_list):
-    array = E_c_list[0] * np.array([[A_c_list[0], B_c_list[0]], [B_c_list[0], I_c_list[0]]])
-    for i in range(1, len(t_list)):
-        a = E_c_list[i] * np.array([[A_c_list[i], B_c_list[i]], [B_c_list[i], I_c_list[i]]])
-        array = np.concatenate((array, a), axis=1)
-    return array
 D_c_j = get_D_c_j(t, post_A_c, post_B_c, post_I_c, E_c_tao)
 D_c_j_2 = get_D_c_j(t_2, A_c_2, B_c_2, I_c_2, E_c_tao_2)
 
@@ -855,10 +821,6 @@ E_c_conv_2 = get_E_c_conv(t_2, E_c_tao_2, t_check_2)
 
 for i in range(0, len(t)):
     output = 0
-    # for j in range(0, len(tao)):
-    #     d = F_e_j_i[j, i] * r_c_j_1[:, j]
-    #     output = output + d
-    # f_cr_j[:, i] = output
 
     if t[i] < t_comp_2: # reassigned t array to make it easier to work with, remove it later
         for j in range(0, len(tao)):
@@ -909,10 +871,6 @@ for i in range(0, len(t)):
 
         m = m + 2
         n = n + 2
-
-
-
-
 
 
 
