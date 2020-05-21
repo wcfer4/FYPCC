@@ -494,6 +494,22 @@ def get_I_grout(d_duct, A_p_list, y_p_list):
         array.append(output)
     return sum(array)
 
+def get_tao_2(t_comp,tao_list):
+    array=[]
+    for i in range(0,len(tao_list)):
+        if tao_list[i]>=t_comp:
+            output=tao_list[i]
+            array.append(output)
+    return array
+
+def get_t_2(t_comp,t_list):
+    array=[]
+    for i in range(0,len(t_list)):
+        if t_list[i]>=t_comp:
+            output=t_list[i]
+            array.append(output)
+    return array
+
 def get_f_set_top(A_list, E_list, strain, B_list, curv): # for steel fset- top
     output = A_list * E_list * strain + B_list * E_list * curv
     return output
@@ -710,8 +726,11 @@ post_I_c = post_get_I_c(i_gross, t, t_grout, area_1, d_c, d_ref, diam_duct, A_s,
 # concrete element 2 - material properties
 
 t_comp_2 = 40 #time that concrete is pured eg addition of slab
-t_2 = [40, 60, 61,200,30000]       # hardcoded - t array but only show post slab pour times
-tao_2 = [40, 60,200, 30000] #Tao values after slab is poured
+tao_2=get_tao_2(t_comp_2,tao)
+t_2=get_t_2(t_comp_2,t)
+
+#t_2 = [40, 60, 61,200,30000]       # hardcoded - t array but only show post slab pour times
+#tao_2 = [40, 60,200, 30000] #Tao values after slab is poured
 t_grout_2 = 40
 area_2 = 360000
 ue_2 = 3500     #hardcoded
