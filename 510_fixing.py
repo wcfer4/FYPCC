@@ -627,8 +627,10 @@ if __name__ == '__main__':
     tao = [7, 40, 60, 200,30000] # hardcoded #will this be input by user?
     t = [7, 40, 60, 61,200, 30000]   # hardcoded #willneedtobe iterated
 
-t_comp = 40 #time that concrete is pured eg addition of slab (ctrl f tcomp)
+
 t_slab = 40 # pour time need this to find E_c_tao_2 (slab)
+t_dry = 28 # time for concrete to dry
+t_comp = t_slab + t_dry #time that concrete is pured eg addition of slab (ctrl f tcomp)
 t_grout = 40    ## hardcoded, is when grout is added
 d_ref = 0                   # hardcoded
 P_p_init = 1000000 #hardcoded, force per strand
@@ -680,8 +682,8 @@ n_strands = np.array([1, 1], dtype=np.float64) # hardcoded, strands per row
 d_c = 752                   # hardcoded
 
 # slab
-tao_2 =get_tao_2(t_comp, tao)
-t_2 = get_t_2(t_comp, t)
+tao_2 =get_tao_2(t_slab, tao)
+t_2 = get_t_2(t_slab, t)
 #t_2 = [40, 60, 61,200,30000]       # hardcoded - t array but only show post slab pour times
 #tao_2 = [40, 60,200, 30000] #Tao values after slab is poured
 
@@ -709,22 +711,12 @@ diam_duct_2 = 0
 n_strands_2 = [0]
 d_c_2 = 75
 
+
+
 f_p_init_N = get_f_p_init_N(t, n_strands, P_p_init) #HC
 f_p_init_M = get_f_p_init_M(t, n_strands, P_p_init, y_p) #HC
 f_p_init = np.array([f_p_init_N, f_p_init_M]) #HC
 f_p_rel_j = get_f_p_rel(f_p_init_N, f_p_init_M, phi_p_steel) #HC
-
-strain_j = np.zeros((2, len(t)))
-f_set_j = np.zeros((2,len(t)))
-
-f_cr_j = np.zeros((2, len(t)))
-f_cr_j_2 = np.zeros((2, len(t)))
-r_c_j_1 = np.zeros((2, len(t)))
-r_c_j_2 = np.zeros((2, len(t)))
-
-f_set_c_slab = np.zeros((2, len(t)))
-f_set_c_grout = np.zeros((2, len(t)))
-f_set_j = np.zeros((2, len(t)))
 
 E_c = get_E_c(f_cmi_input, p_conc) #HC
 s = get_s(s_input) #HC
@@ -825,145 +817,113 @@ pre_D_c_j = get_D_c_j(t, pre_A_c, pre_B_c, pre_I_c, E_c_tao)
 D_c_j_2 = get_D_c_j(t_2, A_c_2, B_c_2, I_c_2, E_c_tao_2)
 
 post_tension = 1 #hardcoded
-m = 0
-n = 2
+# m = 0
+# n = 2
 
-for i in range(0, len(t)):
-    if post_tension == 1:
-        output = 0
+points = 3
+r_e_j = np.array([[1000000, 1000000, 1000000, 1000000, 1000000, 1000000], [10000000, 10000000, 10000000, 10000000, 10000000, 10000000],
+                  [2000000, 2000000, 2000000, 2000000, 2000000, 2000000], [20000000, 20000000, 20000000, 20000000, 20000000, 20000000],
+                  [3000000, 3000000, 3000000, 3000000, 3000000, 3000000], [30000000, 30000000, 30000000, 30000000, 30000000, 30000000]])
+strain_j = np.zeros((points * 2, len(t)))
+f_set_j = np.zeros((2,len(t)))
 
-        if t[i] < t_comp:
-            for j in range(0, len(tao)):
-                d = F_e_j_i[j, i] * r_c_j_1[:, j]
-                output = output + d
-            f_cr_j[:, i] = output
+f_cr_j = np.zeros((2, len(t)))
+f_cr_j_2 = np.zeros((2, len(t)))
+r_c_j_1 = np.zeros((2, len(t)))
+r_c_j_2 = np.zeros((2, len(t)))
 
-            a = (r_e_j[:, i] - f_cr_j[:, i] + post_f_sh_j[:, i] - f_p_init[:, i] + f_p_rel_j[:, i]).reshape(-1, 1)
-            strain_j[:, i] = np.dot(post_F_j[:, m:n], a).reshape( 1, -1)
-            r_c_j_1[:, i] = np.dot(post_D_c_j[:, m:n], strain_j[:,i]) + f_cr_j[:,i] - post_f_sh_j[:, i]
+f_set_c_slab = np.zeros((2, len(t)))
+f_set_c_grout = np.zeros((2, len(t)))
+f_set_j = np.zeros((2, len(t)))
 
-            m = m + 2
-            n = n + 2
+for z in range(0, points):
+    m = 0
+    n = 2
+    for i in range(0, len(t)):
+        if post_tension == 1:
+            output = 0
+
+            if t[i] < t_comp:
+                for j in range(0, len(tao)):
+                    d = F_e_j_i[j, i] * r_c_j_1[:, j]
+                    output = output + d
+                f_cr_j[:, i] = output
+
+                a = (r_e_j[2*z:2*z+2, i] - f_cr_j[:, i] + post_f_sh_j[:, i] - f_p_init[:, i] + f_p_rel_j[:, i]).reshape(-1, 1)
+
+                strain_j[2*z:2*z+2, i] = np.dot(post_F_j[:, m:n], a).reshape( 1, -1)
+                r_c_j_1[:, i] = np.dot(post_D_c_j[:, m:n], strain_j[2*z:2*z+2,i]) + f_cr_j[:,i] - post_f_sh_j[:, i]
+
+                m = m + 2
+                n = n + 2
+            else:
+                for j in range(0, len(tao)):
+                    d = F_e_j_i[j, i] * r_c_j_1[:, j] + F_e_j_i_2[j - (len(tao) - len(tao_2)), i - (len(t) - len(t_2))] * r_c_j_2[:, j - (len(tao) - len(tao_2))]
+                    output = output + d
+                f_cr_j[:, i] = output
+
+                f_set_p = get_f_set(t, t_comp, A_p, E_p, strain_j, y_p)  # prestress in element 1
+                f_set_s_2 = get_f_set(t, t_comp, A_s_2, E_s_2, strain_j, y_s_2)  # steel in element 2
+                f_set_c_slab[:, i] = get_f_set_slab(t, t_2, t_comp, A_c_2, E_c_tao_2, strain_j, B_c_2,
+                                                    I_c_2) # concrete in slab (element 2)
+                f_set_c_slab[:, i] = f_set_c_slab[:, i] * E_c_conv_2[i - (len(E_c_tao) - len(E_c_tao_2))]
+
+                area_grout = get_A_grout(diam_duct, n_strands, A_p)
+                B_grout = get_B_grout(diam_duct, A_p, y_p)
+                I_grout = get_I_grout(diam_duct, A_p, y_p)
+                f_set_c_grout[:, i] = get_f_set_grout(t, t_comp, area_grout, E_c_tao, strain_j, B_grout,
+                                                I_grout)  # grout in section (element 1)
+                f_set_c_grout[:, i] = f_set_c_grout[:, i] * E_c_conv_1[i]
+
+                f_set_j[:, i] = (f_set_p + f_set_s_2).reshape(1, -1) + f_set_c_slab[:, i] + f_set_c_grout[:, i]
+                a = (r_e_j[2*z:2*z+2, i] - f_cr_j[:, i] + post_f_sh_j[:, i] + f_sh_j_slab[:, i] - f_p_init[:, i] + f_p_rel_j[:, i] + f_set_j[:, i]).reshape(-1, 1)
+                strain_j[2*z:2*z+2, i] = np.dot(post_F_j[:, m:n], a).reshape(1, -1)
+
+                r_c_j_1[:, i] = np.dot(post_D_c_j[:, m:n], strain_j[2*z:2*z+2, i]) + f_cr_j[:, i] - post_f_sh_j[:, i]  - f_set_c_grout[:, i]
+                r_c_j_2[:, i] = np.dot(D_c_j_2[:, m - 2*(len(t)-len(t_2)):n - 2*(len(t)-len(t_2))], strain_j[2*z:2*z+2, i]) + f_cr_j_2[:, i] - f_sh_j_slab[:, i] - f_set_c_slab[:, i]
+                r_c_j_2[:, 3] = [0, 0] # hardcoded, can remove
+
+                m = m + 2
+                n = n + 2
         else:
-            for j in range(0, len(tao)):
-                d = F_e_j_i[j, i] * r_c_j_1[:, j] + F_e_j_i_2[j - (len(tao) - len(tao_2)), i - (len(t) - len(t_2))] * r_c_j_2[:, j - (len(tao) - len(tao_2))]
-                output = output + d
-            f_cr_j[:, i] = output
+            output = 0
 
-            f_set_p = get_f_set(t, t_comp, A_p, E_p, strain_j, y_p)  # prestress in element 1
-            f_set_s_2 = get_f_set(t, t_comp, A_s_2, E_s_2, strain_j, y_s_2)  # steel in element 2
-            f_set_c_slab[:, i] = get_f_set_slab(t, t_2, t_comp, A_c_2, E_c_tao_2, strain_j, B_c_2,
-                                                I_c_2) # concrete in slab (element 2)
-            f_set_c_slab[:, i] = f_set_c_slab[:, i] * E_c_conv_2[i - (len(E_c_tao) - len(E_c_tao_2))]
+            if t[i] < t_comp:
+                for j in range(0, len(tao)):
+                    d = F_e_j_i[j, i] * r_c_j_1[:, j]
+                    output = output + d
+                f_cr_j[:, i] = output
 
-            area_grout = get_A_grout(diam_duct, n_strands, A_p)
-            B_grout = get_B_grout(diam_duct, A_p, y_p)
-            I_grout = get_I_grout(diam_duct, A_p, y_p)
-            f_set_c_grout[:, i] = get_f_set_grout(t, t_comp, area_grout, E_c_tao, strain_j, B_grout,
-                                            I_grout)  # grout in section (element 1)
-            f_set_c_grout[:, i] = f_set_c_grout[:, i] * E_c_conv_1[i]
+                a = (r_e_j[2*z:2*z+2, i] - f_cr_j[:, i] + pre_f_sh_j[:, i] - f_p_init[:, i] + f_p_rel_j[:, i]).reshape(-1, 1)
+                strain_j[2*z:2*z+2, i] = np.dot(pre_F_j[:, m:n], a).reshape( 1, -1)
+                r_c_j_1[:, i] = np.dot(pre_D_c_j[:, m:n], strain_j[2*z:2*z+2,i]) + f_cr_j[:,i] - pre_f_sh_j[:, i]
 
-            f_set_j[:, i] = (f_set_p + f_set_s_2).reshape(1, -1) + f_set_c_slab[:, i] + f_set_c_grout[:, i]
-            a = (r_e_j[:, i] - f_cr_j[:, i] + post_f_sh_j[:, i] + f_sh_j_slab[:, i] - f_p_init[:, i] + f_p_rel_j[:, i] + f_set_j[:, i]).reshape(-1, 1)
-            strain_j[:, i] = np.dot(post_F_j[:, m:n], a).reshape(1, -1)
+                m = m + 2
+                n = n + 2
+            else:
+                for j in range(0, len(tao)):
+                    d = F_e_j_i[j, i] * r_c_j_1[:, j] + F_e_j_i_2[j - (len(tao) - len(tao_2)), i - (len(t) - len(t_2))] * r_c_j_2[:, j - (len(tao) - len(tao_2))]
+                    output = output + d
+                f_cr_j[:, i] = output
 
-            r_c_j_1[:, i] = np.dot(post_D_c_j[:, m:n], strain_j[:, i]) + f_cr_j[:, i] - post_f_sh_j[:, i]  - f_set_c_grout[:, i]
-            r_c_j_2[:, i] = np.dot(D_c_j_2[:, m - 2*(len(t)-len(t_2)):n - 2*(len(t)-len(t_2))], strain_j[:, i]) + f_cr_j_2[:, i] - f_sh_j_slab[:, i] - f_set_c_slab[:, i]
-            r_c_j_2[:, 3] = [0, 0] # hardcoded, can remove
+                f_set_p = get_f_set(t, t_comp, A_p, E_p, strain_j, y_p)  # prestress in element 1
+                f_set_s_2 = get_f_set(t, t_comp, A_s_2, E_s_2, strain_j, y_s_2)  # steel in element 2
+                f_set_c_slab[:, i] = get_f_set_slab(t, t_2, t_comp, A_c_2, E_c_tao_2, strain_j, B_c_2,
+                                                    I_c_2) # concrete in slab (element 2)
+                f_set_c_slab[:, i] = f_set_c_slab[:, i] * E_c_conv_2[i - (len(E_c_tao) - len(E_c_tao_2))]
 
-            m = m + 2
-            n = n + 2
-    else:
-        output = 0
+                area_grout = 0
+                B_grout = 0
+                I_grout = 0
 
-        if t[i] < t_comp:
-            for j in range(0, len(tao)):
-                d = F_e_j_i[j, i] * r_c_j_1[:, j]
-                output = output + d
-            f_cr_j[:, i] = output
+                f_set_j[:, i] = (f_set_p + f_set_s_2).reshape(1, -1) + f_set_c_slab[:, i] + f_set_c_grout[:, i]
+                a = (r_e_j[2*z:2*z+2, i] - f_cr_j[:, i] + pre_f_sh_j[:, i] + f_sh_j_slab[:, i] - f_p_init[:, i] + f_p_rel_j[:, i] + f_set_j[:, i]).reshape(-1, 1)
+                strain_j[2*z:2*z+2, i] = np.dot(pre_F_j[:, m:n], a).reshape(1, -1)
 
-            a = (r_e_j[:, i] - f_cr_j[:, i] + pre_f_sh_j[:, i] - f_p_init[:, i] + f_p_rel_j[:, i]).reshape(-1, 1)
-            strain_j[:, i] = np.dot(pre_F_j[:, m:n], a).reshape( 1, -1)
-            r_c_j_1[:, i] = np.dot(pre_D_c_j[:, m:n], strain_j[:,i]) + f_cr_j[:,i] - pre_f_sh_j[:, i]
+                r_c_j_1[:, i] = np.dot(pre_D_c_j[:, m:n], strain_j[2*z:2*z+2, i]) + f_cr_j[:, i] - pre_f_sh_j[:, i]  - f_set_c_grout[:, i]
+                r_c_j_2[:, i] = np.dot(D_c_j_2[:, m - 2*(len(t)-len(t_2)):n - 2*(len(t)-len(t_2))], strain_j[2*z:2*z+2, i]) + f_cr_j_2[:, i] - f_sh_j_slab[:, i] - f_set_c_slab[:, i]
+                r_c_j_2[:, 3] = [0, 0] # hardcoded, can remove
 
-            m = m + 2
-            n = n + 2
-        else:
-            for j in range(0, len(tao)):
-                d = F_e_j_i[j, i] * r_c_j_1[:, j] + F_e_j_i_2[j - (len(tao) - len(tao_2)), i - (len(t) - len(t_2))] * r_c_j_2[:, j - (len(tao) - len(tao_2))]
-                output = output + d
-            f_cr_j[:, i] = output
-
-            f_set_p = get_f_set(t, t_comp, A_p, E_p, strain_j, y_p)  # prestress in element 1
-            f_set_s_2 = get_f_set(t, t_comp, A_s_2, E_s_2, strain_j, y_s_2)  # steel in element 2
-            f_set_c_slab[:, i] = get_f_set_slab(t, t_2, t_comp, A_c_2, E_c_tao_2, strain_j, B_c_2,
-                                                I_c_2) # concrete in slab (element 2)
-            f_set_c_slab[:, i] = f_set_c_slab[:, i] * E_c_conv_2[i - (len(E_c_tao) - len(E_c_tao_2))]
-
-            area_grout = 0
-            B_grout = 0
-            I_grout = 0
-
-            f_set_j[:, i] = (f_set_p + f_set_s_2).reshape(1, -1) + f_set_c_slab[:, i] + f_set_c_grout[:, i]
-            a = (r_e_j[:, i] - f_cr_j[:, i] + pre_f_sh_j[:, i] + f_sh_j_slab[:, i] - f_p_init[:, i] + f_p_rel_j[:, i] + f_set_j[:, i]).reshape(-1, 1)
-            strain_j[:, i] = np.dot(pre_F_j[:, m:n], a).reshape(1, -1)
-
-            r_c_j_1[:, i] = np.dot(pre_D_c_j[:, m:n], strain_j[:, i]) + f_cr_j[:, i] - pre_f_sh_j[:, i]  - f_set_c_grout[:, i]
-            r_c_j_2[:, i] = np.dot(D_c_j_2[:, m - 2*(len(t)-len(t_2)):n - 2*(len(t)-len(t_2))], strain_j[:, i]) + f_cr_j_2[:, i] - f_sh_j_slab[:, i] - f_set_c_slab[:, i]
-            r_c_j_2[:, 3] = [0, 0] # hardcoded, can remove
-
-            m = m + 2
-            n = n + 2
-
+                m = m + 2
+                n = n + 2
 print(strain_j)
-
-# for i in range(0, len(t)):
-#     output = 0
-#
-#     if t[i] < t_comp:
-#         for j in range(0, len(tao)):
-#             d = F_e_j_i[j, i] * r_c_j_1[:, j]
-#             output = output + d
-#         f_cr_j[:, i] = output
-#
-#         a = (r_e_j[:, i] - f_cr_j[:, i] + post_f_sh_j[:, i] - f_p_init[:, i] + f_p_rel_j[:, i]).reshape(-1, 1)
-#         strain_j[:, i] = np.dot(post_F_j[:, m:n], a).reshape( 1, -1)
-#         r_c_j_1[:, i] = np.dot(post_D_c_j[:, m:n], strain_j[:,i]) + f_cr_j[:,i] - post_f_sh_j[:, i]
-#
-#         m = m + 2
-#         n = n + 2
-#     else:
-#         for j in range(0, len(tao)):
-#             d = F_e_j_i[j, i] * r_c_j_1[:, j] + F_e_j_i_2[j - (len(tao) - len(tao_2)), i - (len(t) - len(t_2))] * r_c_j_2[:, j - (len(tao) - len(tao_2))]
-#             output = output + d
-#         f_cr_j[:, i] = output
-#
-#         f_set_p = get_f_set(t, t_comp, A_p, E_p, strain_j, y_p)  # prestress in element 1
-#         f_set_s_2 = get_f_set(t, t_comp, A_s_2, E_s_2, strain_j, y_s_2)  # steel in element 2
-#         f_set_c_slab[:, i] = get_f_set_slab(t, t_2, t_comp, A_c_2, E_c_tao_2, strain_j, B_c_2,
-#                                             I_c_2) # concrete in slab (element 2)
-#         f_set_c_slab[:, i] = f_set_c_slab[:, i] * E_c_conv_2[i - (len(E_c_tao) - len(E_c_tao_2))]
-#
-#         if post_tension == 1:
-#             area_grout = get_A_grout(diam_duct, n_strands, A_p)
-#             B_grout = get_B_grout(diam_duct, A_p, y_p)
-#             I_grout = get_I_grout(diam_duct, A_p, y_p)
-#             f_set_c_grout[:, i] = get_f_set_grout(t, t_comp, area_grout, E_c_tao, strain_j, B_grout,
-#                                             I_grout)  # grout in section (element 1)
-#             f_set_c_grout[:, i] = f_set_c_grout[:, i] * E_c_conv_1[i]
-#
-#         else:
-#             area_grout = 0
-#             B_grout = 0
-#             I_grout = 0
-#
-#         f_set_j[:, i] = (f_set_p + f_set_s_2).reshape(1, -1) + f_set_c_slab[:, i] + f_set_c_grout[:, i]
-#         a = (r_e_j[:, i] - f_cr_j[:, i] + post_f_sh_j[:, i] + f_sh_j_slab[:, i] - f_p_init[:, i] + f_p_rel_j[:, i] + f_set_j[:, i]).reshape(-1, 1)
-#         strain_j[:, i] = np.dot(post_F_j[:, m:n], a).reshape(1, -1)
-#
-#         r_c_j_1[:, i] = np.dot(post_D_c_j[:, m:n], strain_j[:, i]) + f_cr_j[:, i] - post_f_sh_j[:, i]  - f_set_c_grout[:, i]
-#         r_c_j_2[:, i] = np.dot(D_c_j_2[:, m - 2*(len(t)-len(t_2)):n - 2*(len(t)-len(t_2))], strain_j[:, i]) + f_cr_j_2[:, i] - f_sh_j_slab[:, i] - f_set_c_slab[:, i]
-#         r_c_j_2[:, 3] = [0, 0] # hardcoded, can remove
-#
-#         m = m + 2
-#         n = n + 2
