@@ -623,22 +623,58 @@ def get_D_c_j(t_list, A_c_list, B_c_list, I_c_list, E_c_list): #CK
         array = np.concatenate((array, a), axis=1)
     return array
 
+def get_w_self(density,area):
+    array=density * area
+    return array
+
+#Calculating UDL for different times
+def get_sw_beam(t_list,tao_list,density_gird,density_slab,area_gird,area_slab,sw_add_loading):
+    array = np.zeros(len(t_list)) #the array of UDLS
+    loading = np.zeros(len(tao_list)) #create blank array to input
+
+    for a in range(len(tao_list)): #This array determines the UDL for each tao value #HC
+        if a==0:
+            loading[a]=get_w_self(density_gird,area_gird)
+        elif a==1:
+            loading[a]=get_w_self(density_gird,area_gird)+get_w_self(density_slab,area_slab)
+        elif a>1:
+            for i in range(len(sw_add_loading)):
+                if a==(i+2):
+                    loading[a]=loading[a-1]+sw_add_loading[i]
+
+    for j in range(len(t_list)): #HC
+        for i in range(len(tao_list)):
+            if t_list[j]<tao_list[i]:
+                sw=loading[i-1]
+                break
+            elif i==len(tao_list)-1:
+                sw=loading[i]
+        array[j]=sw
+    return array
+
+#calculating moment for different times
+def get_moment_beam(t_list,length,x_length,sw_beam):
+    array=np.zeros(len(t_list)) #the array of moments
+    for j in range(len(t_list)):
+        array[j]=sw_beam[j]*x_length/2*(length-x_length)
+    return array
+
+#Calculate Compressive Force #need to recalculate to incoporate effect of relaxations losses
+def get_N_beam(t_list,N_inital):
+    array=np.zeros(len(t_list)) #the array of Compressive forces
+    for j in range(len(t_list)):
+        array[j]=N_inital*-1
+    return array
+
 if __name__ == '__main__':
-    tao = [7, 40, 60, 200,30000] # hardcoded #will this be input by user?
+    tao = [7, 40, 60, 200] # hardcoded #will this be input by user?
     t = [7, 40, 60, 61,200, 30000]   # hardcoded #willneedtobe iterated
 
-
+t_comp = 40 #time that concrete is pured eg addition of slab (ctrl f tcomp)
 t_slab = 40 # pour time need this to find E_c_tao_2 (slab)
-t_dry = 28 # time for concrete to dry
-t_comp = t_slab + t_dry #time that concrete is pured eg addition of slab (ctrl f tcomp)
 t_grout = 40    ## hardcoded, is when grout is added
 d_ref = 0                   # hardcoded
 P_p_init = 1000000 #hardcoded, force per strand
-
-r_e_j = np.array([[0, 0, 0, 0, 0, 0, 0,0,0],
-                  [550 * math.pow(10,6), 550 * math.pow(10,6),
-                   1170 * math.pow(10,6), 1170 * math.pow(10,6), 1170 * math.pow(10,6),
-                   1570 * math.pow(10,6),1800 * math.pow(10,6),1800 * math.pow(10,6), 1800 * math.pow(10,6)]]) #hardcoded
 
 # strain in steel calculation at each t
 f_p_steel = 1800    #hardcoded
@@ -682,8 +718,8 @@ n_strands = np.array([1, 1], dtype=np.float64) # hardcoded, strands per row
 d_c = 752                   # hardcoded
 
 # slab
-tao_2 =get_tao_2(t_slab, tao)
-t_2 = get_t_2(t_slab, t)
+tao_2 =get_tao_2(t_comp, tao)
+t_2 = get_t_2(t_comp, t)
 #t_2 = [40, 60, 61,200,30000]       # hardcoded - t array but only show post slab pour times
 #tao_2 = [40, 60,200, 30000] #Tao values after slab is poured
 
@@ -711,12 +747,49 @@ diam_duct_2 = 0
 n_strands_2 = [0]
 d_c_2 = 75
 
+#Calculate Moment along the beam from UDL
+length_beam=20*pow(10,3)
+N_init=100*pow(10,3)
+point_along_beam=np.array([0,5,10,15,20])*pow(10,3) #points along the beam
+points=len(point_along_beam)#number of points selected
 
+
+sw_addloading=np.array([20*pow(10,6),30*pow(10,6)]) #In csv recording, have code to make this array
+N_test_calc=get_N_beam(t,N_init)
+
+density_1 =25
+density_2=25
+UDL_perpoint=get_sw_beam(t,tao,density_1,density_2,area_1,area_2,sw_addloading)
+
+
+#calculate r_e_j #still haven't replaced r_e_j
+for a in range(len(point_along_beam)):
+    N_r_e_j = np.zeros(len(t))
+    M_r_e_j = np.zeros(len(t))
+    N_r_e_j = get_N_beam(t, N_init)
+    M_r_e_j=get_moment_beam(t,length_beam,point_along_beam[a],UDL_perpoint)
+
+    if a==0:
+        r_e_j=np.vstack((N_r_e_j,M_r_e_j))
+    else:
+        r_e_j=np.vstack((r_e_j,N_r_e_j,M_r_e_j))
 
 f_p_init_N = get_f_p_init_N(t, n_strands, P_p_init) #HC
 f_p_init_M = get_f_p_init_M(t, n_strands, P_p_init, y_p) #HC
 f_p_init = np.array([f_p_init_N, f_p_init_M]) #HC
 f_p_rel_j = get_f_p_rel(f_p_init_N, f_p_init_M, phi_p_steel) #HC
+
+strain_j = np.zeros((2, len(t)))
+f_set_j = np.zeros((2,len(t)))
+
+f_cr_j = np.zeros((2, len(t)))
+f_cr_j_2 = np.zeros((2, len(t)))
+r_c_j_1 = np.zeros((2, len(t)))
+r_c_j_2 = np.zeros((2, len(t)))
+
+f_set_c_slab = np.zeros((2, len(t)))
+f_set_c_grout = np.zeros((2, len(t)))
+f_set_j = np.zeros((2, len(t)))
 
 E_c = get_E_c(f_cmi_input, p_conc) #HC
 s = get_s(s_input) #HC
@@ -817,13 +890,11 @@ pre_D_c_j = get_D_c_j(t, pre_A_c, pre_B_c, pre_I_c, E_c_tao)
 D_c_j_2 = get_D_c_j(t_2, A_c_2, B_c_2, I_c_2, E_c_tao_2)
 
 post_tension = 1 #hardcoded
-# m = 0
-# n = 2
+#m = 0
+#n = 2
 
-points = 3
-r_e_j = np.array([[1000000, 1000000, 1000000, 1000000, 1000000, 1000000], [10000000, 10000000, 10000000, 10000000, 10000000, 10000000],
-                  [2000000, 2000000, 2000000, 2000000, 2000000, 2000000], [20000000, 20000000, 20000000, 20000000, 20000000, 20000000],
-                  [3000000, 3000000, 3000000, 3000000, 3000000, 3000000], [30000000, 30000000, 30000000, 30000000, 30000000, 30000000]])
+points = len(point_along_beam)
+
 strain_j = np.zeros((points * 2, len(t)))
 f_set_j = np.zeros((2,len(t)))
 
