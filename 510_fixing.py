@@ -1,5 +1,7 @@
 import numpy as np
 import math as math
+import matplotlib.pyplot as py
+import sympy as sp
 
 # if user input needs to stored in a list
 def get_multiple_input(input_text):
@@ -748,9 +750,11 @@ n_strands_2 = [0]
 d_c_2 = 75
 
 #Calculate Moment along the beam from UDL
-length_beam=20*pow(10,3)
+length=20
+length_beam=length*pow(10,3)
 N_init=100*pow(10,3)
-point_along_beam=np.array([0,5,10,15,20])*pow(10,3) #points along the beam
+point_along_beam=np.arange(start=0, stop=length+0.1, step=0.1)*pow(10,3)
+#point_along_beam=np.array([0,2.5,5,7.5,10,12.5,15,17.5,20])*pow(10,3) #points along the beam
 points=len(point_along_beam)#number of points selected
 
 
@@ -997,4 +1001,50 @@ for z in range(0, points):
 
                 m = m + 2
                 n = n + 2
-print(strain_j)
+
+#print(strain_j)
+
+#Obtaining the array of relating curvatures by time by points along the beam
+time_points_curve=np.zeros((len(t),len(point_along_beam)))
+for j in range(len(t)):
+ for i in range(len(point_along_beam)):
+     if i==0:
+         time_points_curve[j, i] = strain_j[i+1, j]
+     else:
+         time_points_curve[j, i] = strain_j[2*i+1, j] #obtains the curvatures along beam with the respective times (rows) and points along beam (columns)
+
+#Obtaining curve fit and then obtaining related deflection
+time_deflection=np.zeros(len(t))
+x_input_user=5
+x_input=x_input_user*pow(10,3)
+#for j in range(len(t)):
+#    x=point_along_beam
+#    y=time_points_curve[j]
+#    a=np.polyfit(x,y,2)
+#    b=np.poly1d(a) #this is the curve used for this time for points along the beam - refer to it as b(x)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+x = point_along_beam
+y = time_points_curve[0]
+
+a = np.polyfit(x, y, 2)
+b = np.poly1d(a)
+print(a)
+print (b)
+
+#Plots t
+py.plot(point_along_beam, time_points_curve[0])
+py.plot(x,b(x))
+py.show()
