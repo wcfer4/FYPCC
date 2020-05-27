@@ -2,6 +2,7 @@ import numpy as np
 import math as math
 import matplotlib.pyplot as py
 import sympy as sp
+from scipy.integrate import  quad
 
 # if user input needs to stored in a list
 def get_multiple_input(input_text):
@@ -658,7 +659,7 @@ def get_sw_beam(t_list,tao_list,density_gird,density_slab,area_gird,area_slab,sw
 def get_moment_beam(t_list,length,x_length,sw_beam):
     array=np.zeros(len(t_list)) #the array of moments
     for j in range(len(t_list)):
-        array[j]=sw_beam[j]*x_length/2*(length-x_length)
+        array[j]=sw_beam[j]*x_length/2*(length-x_length)*-1
     return array
 
 #Calculate Compressive Force #need to recalculate to incoporate effect of relaxations losses
@@ -668,9 +669,19 @@ def get_N_beam(t_list,N_inital):
         array[j]=N_inital*-1
     return array
 
+def get_trpzdl(points_beam,time_points_curve):
+    array=np.zeros(len(points_beam))
+    for j in range(len(points_beam)):
+        if j==0:
+            array[j]=0
+        else:
+            array[j]=array[j-1]+1/2*(points_beam[j]-points_beam[j-1])*(time_points_curve[j]-time_points_curve[j-1])
+    return array
+
 if __name__ == '__main__':
     tao = [7, 40, 60, 200] # hardcoded #will this be input by user?
-    t = [7, 40, 60, 61,200, 30000]   # hardcoded #willneedtobe iterated
+    t = [7, 40, 60, 61,200,400]   # hardcoded #willneedtobe iterated
+    #t=np.arange(start=7, stop=300+1, step=1)
 
 t_comp = 40 #time that concrete is pured eg addition of slab (ctrl f tcomp)
 t_slab = 40 # pour time need this to find E_c_tao_2 (slab)
@@ -1012,39 +1023,42 @@ for j in range(len(t)):
          time_points_curve[j, i] = strain_j[i+1, j]
      else:
          time_points_curve[j, i] = strain_j[2*i+1, j] #obtains the curvatures along beam with the respective times (rows) and points along beam (columns)
+#print(time_points_curve)
 
-#Obtaining curve fit and then obtaining related deflection
-time_deflection=np.zeros(len(t))
-x_input_user=5
-x_input=x_input_user*pow(10,3)
-#for j in range(len(t)):
-#    x=point_along_beam
-#    y=time_points_curve[j]
-#    a=np.polyfit(x,y,2)
-#    b=np.poly1d(a) #this is the curve used for this time for points along the beam - refer to it as b(x)
+#Calculating the first integration - using the trapezoidal method
+for j in range(len(t)):
+    integerarray=get_trpzdl(point_along_beam,time_points_curve[j])
+    if j==0:
+        first_integration=integerarray
+    else:
+        first_integration=np.vstack((first_integration,integerarray))
 
+#Calculating the second integration - using the trapezoidal method - this is the deflection
+for j in range(len(t)):
+    integerarray=get_trpzdl(point_along_beam,first_integration[j])
+    if j==0:
+        second_integration=integerarray
+    else:
+        second_integration=np.vstack((second_integration,integerarray))
 
+#Obtain Deflection Array
+deflection_array= np.transpose(second_integration)
 
-
-
-
-
-
-
-
-
-
-
-
-x = point_along_beam
-y = time_points_curve[0]
-
-a = np.polyfit(x, y, 2)
-b = np.poly1d(a)
-print(a)
-print (b)
-
-#Plots t
-py.plot(point_along_beam, time_points_curve[0])
-py.plot(x,b(x))
+#Deflection plot calculation
+#length required by user
+length_input=2 #in m
+for i in range(len(point_along_beam)):
+    if (length_input*10**3)==point_along_beam[i]:
+        deflection_plot_array=deflection_array[i]
+        break
+py.plot(t , deflection_plot_array,'or')
+py.xlabel("Number of Days")
+py.ylabel("Deflection (mm)")
 py.show()
+
+
+
+
+#Code to display Curvature versus time - this is for t(0)
+#py.plot(point_along_beam, time_points_curve[0],'or')
+#py.show()
