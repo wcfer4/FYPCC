@@ -680,8 +680,8 @@ def get_trpzdl(points_beam,time_points_curve):
 
 if __name__ == '__main__':
     tao = [7, 40, 60, 200] # hardcoded #will this be input by user?
-    t = [7, 40, 60, 61,200,400]   # hardcoded #willneedtobe iterated
-    #t=np.arange(start=7, stop=300+1, step=1)
+    #t = [7, 40, 60, 61,200,400]   # hardcoded #willneedtobe iterated
+    t=np.arange(start=7, stop=250+1, step=1)
 
 t_comp = 40 #time that concrete is pured eg addition of slab (ctrl f tcomp)
 t_slab = 40 # pour time need this to find E_c_tao_2 (slab)
@@ -764,8 +764,8 @@ d_c_2 = 75
 length=20
 length_beam=length*pow(10,3)
 N_init=100*pow(10,3)
-point_along_beam=np.arange(start=0, stop=length+0.1, step=0.1)*pow(10,3)
-#point_along_beam=np.array([0,2.5,5,7.5,10,12.5,15,17.5,20])*pow(10,3) #points along the beam
+#point_along_beam=np.arange(start=0, stop=length+0.1, step=0.1)*pow(10,3)
+point_along_beam=np.array([0,2.5,5,7.5,10,12.5,15,17.5,20])*pow(10,3) #points along the beam
 points=len(point_along_beam)#number of points selected
 
 
@@ -775,6 +775,7 @@ N_test_calc=get_N_beam(t,N_init)
 density_1 =25
 density_2=25
 UDL_perpoint=get_sw_beam(t,tao,density_1,density_2,area_1,area_2,sw_addloading)
+print(UDL_perpoint)
 
 
 #calculate r_e_j #still haven't replaced r_e_j
@@ -834,6 +835,7 @@ strain_sh_j = strain_cse + strain_shd #HC
 J_t_tao = get_J_t_tao(t, tao, E_c_tao, phi_t_tao) #HC
 E_c_j = get_E_c_j(t, tao, J_t_tao) #HC
 F_e_j_i = get_Fe_j_i(t, tao, J_t_tao) #Check Calcs with Calvin - Code matches calcs
+
 
 # E_c_tao related calcs for slab
 E_c_2 = get_E_c(f_cmi_input_2, p_conc_2) #HC
@@ -1023,7 +1025,7 @@ for j in range(len(t)):
          time_points_curve[j, i] = strain_j[i+1, j]
      else:
          time_points_curve[j, i] = strain_j[2*i+1, j] #obtains the curvatures along beam with the respective times (rows) and points along beam (columns)
-#print(time_points_curve)
+print(time_points_curve)
 
 #Calculating the first integration - using the trapezoidal method
 for j in range(len(t)):
@@ -1046,12 +1048,12 @@ deflection_array= np.transpose(second_integration)
 
 #Deflection plot calculation
 #length required by user
-length_input=2 #in m
+length_input=10 #in m
 for i in range(len(point_along_beam)):
     if (length_input*10**3)==point_along_beam[i]:
         deflection_plot_array=deflection_array[i]
         break
-py.plot(t , deflection_plot_array,'or')
+py.plot(t , deflection_plot_array,'r')
 py.xlabel("Number of Days")
 py.ylabel("Deflection (mm)")
 py.show()
@@ -1062,3 +1064,5 @@ py.show()
 #Code to display Curvature versus time - this is for t(0)
 #py.plot(point_along_beam, time_points_curve[0],'or')
 #py.show()
+
+
