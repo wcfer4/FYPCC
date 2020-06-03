@@ -717,11 +717,11 @@ ue_1 = 8974     #brief calc from Girder drawing - refer to additional document
 # Ac, Bc, Ic of section variables required
 A_s = [0]       # no renforced steel
 y_s = [0]           # no renforced steel
-A_p = np.array([(15/2)**2*2, (15/2)**2*2,(15/2)**2*2,(15/2)**2*4,(15/2)**2*27,(15/2)**2*27],dtype=np.float64)*math.pi       # hardcoded
-y_p = [1068,1118,1168,1218,1268,1318] #hardcoded, prestress distance from very top
+A_p = np.array([(15/2)**2*14, (15/2)**2*27,(15/2)**2*27],dtype=np.float64)*math.pi       # hardcoded
+y_p = [(1218+184),(1268+184),(1318+184)] #hardcoded, prestress distance from very top
 diam_duct = 60              # hardcoded #disregarded
-n_strands = np.array([2,2,2,4,27,27], dtype=np.float64) #calc for each layer of prestressed steel
-d_c =765+184                   # calc by yt+184 (thickness of comp deck)
+n_strands = np.array([14,27,27], dtype=np.float64) #calc for each layer of prestressed steel
+d_c =801+184                   # calc by yt+184 (thickness of comp deck)
 
 # slab
 tao_2 =get_tao_2(t_slab, tao)
