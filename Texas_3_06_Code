@@ -672,13 +672,13 @@ def get_trpzdl(points_beam,time_points_curve):
     return array
 
 if __name__ == '__main__':
-    tao = [7, 718, 763,1000] # hardcoded #will this be input by user?
+    tao = [7, 725, 770,1000] # hardcoded #will this be input by user?
     #t = [7,718,763,900,1000]   # hardcoded #willneedtobe iterated
     t=np.arange(start=7, stop=1100+1, step=1)
 
-t_comp = 791 #time that concrete is pured eg addition of slab (ctrl f tcomp)
-t_slab = 763 # pour time need this to find E_c_tao_2 (slab)
-t_grout = 791   ## hardcoded, is when grout is added
+t_comp = 798 #time that concrete is pured eg addition of slab (ctrl f tcomp)
+t_slab = 725 # pour time need this to find E_c_tao_2 (slab)
+t_grout = 798   ## hardcoded, is when grout is added
 d_ref = 0                   # hardcoded
 P_p_init = 1000000 #hardcoded, force per strand
 
