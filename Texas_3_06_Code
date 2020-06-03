@@ -676,8 +676,8 @@ if __name__ == '__main__':
     #t = [7,718,763,900,1000]   # hardcoded #willneedtobe iterated
     t=np.arange(start=7, stop=1100+1, step=1)
 
-t_comp = 763 #time that concrete is pured eg addition of slab (ctrl f tcomp)
-t_slab = 718 # pour time need this to find E_c_tao_2 (slab)
+t_comp = 791 #time that concrete is pured eg addition of slab (ctrl f tcomp)
+t_slab = 763 # pour time need this to find E_c_tao_2 (slab)
 t_grout = 791   ## hardcoded, is when grout is added
 d_ref = 0                   # hardcoded
 P_p_init = 1000000 #hardcoded, force per strand
@@ -724,7 +724,7 @@ n_strands = np.array([2,2,2,4,27,27], dtype=np.float64) #calc for each layer of 
 d_c =765+184                   # calc by yt+184 (thickness of comp deck)
 
 # slab
-tao_2 =get_tao_2(t_comp, tao)
+tao_2 =get_tao_2(t_slab, tao)
 t_2 = get_t_2(t_comp, t)
 #t_2 = [40, 60, 61,200,30000]       # hardcoded - t array but only show post slab pour times
 #tao_2 = [40, 60,200, 30000] #Tao values after slab is poured
@@ -763,17 +763,16 @@ point_along_beam=np.arange(start=0, stop=length+1, step=1)*pow(10,3)
 points=len(point_along_beam)#number of points selected
 
 
-sw_addloading=np.array([16.49*pow(10,6),20.5356*pow(10,6),24.8436*pow(10,6),25.8436*pow(10,6)])#additional UDL added for 1000 tao value
+sw_addloading=np.array([16.49*pow(10,6),20.5356*pow(10,6),26.33*pow(10,6),27.8436*pow(10,6)])#additional UDL added for 1000 tao value
 N_test_calc=get_N_beam(t,N_init)
 
 density_1 =25
 density_2=25
 UDL_perpoint=get_sw_beam(t,tao,density_1,density_2,area_1,area_2,sw_addloading)
 
-
 eccentricity = 507
 P_e_moment=np.ones(len(t))*eccentricity*N_init
-print(P_e_moment)
+
 
 #calculate r_e_j #still haven't replaced r_e_j
 for a in range(len(point_along_beam)):
@@ -788,7 +787,7 @@ for a in range(len(point_along_beam)):
     else:
         r_e_j=np.vstack((r_e_j,N_r_e_j,M_r_e_j))
 
-print(r_e_j)
+
 f_p_init_N = get_f_p_init_N(t, n_strands, P_p_init) #HC
 f_p_init_M = get_f_p_init_M(t, n_strands, P_p_init, y_p) #HC
 f_p_init = np.array([f_p_init_N, f_p_init_M]) #HC
@@ -989,8 +988,9 @@ for z in range(0, points):
                 n = n + 2
             else:
                 for j in range(0, len(tao)):
-                    d = F_e_j_i[j, i] * r_c_j_1[:, j] + F_e_j_i_2[j - (len(tao) - len(tao_2)), i - (len(t) - len(t_2))] * r_c_j_2[:, j - (len(tao) - len(tao_2))]
-                    output = output + d
+                    for k in range(0,len(tao_2)):
+                        d = F_e_j_i[j, i] * r_c_j_1[:, j] + F_e_j_i_2[k, i - (len(t) - len(t_2))] * r_c_j_2[:, j - k]
+                        output = output + d
                 f_cr_j[:, i] = output
 
                 f_set_p = get_f_set(t, t_comp, A_p, E_p, strain_j, y_p)  # prestress in element 1
@@ -1043,18 +1043,29 @@ for j in range(len(t)):
 #Obtain Deflection Array
 deflection_array= np.transpose(second_integration)
 
+#Determining Deflection for t =0 to t=transfer
+#print(t)
+time=np.arange(start=0, stop=tao[0], step=1)
+t_result=np.append(time,t)
+time_zero_deflection=np.zeros(t[0]-time[0])
+#print(time_zero_deflection)
+
 #Deflection plot calculation
 #length required by user
 length_input=5 #in m
 for i in range(len(point_along_beam)):
     if (length_input*10**3)==point_along_beam[i]:
         deflection_plot_array=deflection_array[i]
+        deflection_plot_array=np.append(time_zero_deflection,deflection_plot_array)
         break
 
-py.plot(t[0:len(t)-1] , deflection_plot_array[0:len(t)-1],'r')
+#print(deflection_plot_array)
+py.plot(t_result[0:len(t_result)-1] , deflection_plot_array[0:len(t_result)-1],'r')
 py.xlabel("Number of Days")
 py.ylabel("Deflection (mm)")
+py.margins(x=0)
 py.show()
+
 
 #Code to display deflection versus time - this is for t(0)
 #py.plot(point_along_beam, second_integration[0],'or')
