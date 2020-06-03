@@ -770,7 +770,7 @@ density_1 =25
 density_2=25
 UDL_perpoint=get_sw_beam(t,tao,density_1,density_2,area_1,area_2,sw_addloading)
 
-eccentricity = 507
+eccentricity = 477
 P_e_moment=np.ones(len(t))*eccentricity*N_init
 
 
