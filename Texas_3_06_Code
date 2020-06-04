@@ -1,8 +1,8 @@
 import numpy as np
 import math as math
 import matplotlib.pyplot as py
-import sympy as sp
-from scipy.integrate import  quad
+# import sympy as sp
+# from scipy.integrate import  quad
 
 # if user input needs to stored in a list
 def get_multiple_input(input_text):
@@ -672,12 +672,12 @@ def get_trpzdl(points_beam,time_points_curve):
     return array
 
 if __name__ == '__main__':
-    tao = [7, 725, 770,1000] # hardcoded #will this be input by user?
+    tao = [7, 770,1000] # hardcoded #will this be input by user?
     #t = [7,718,763,900,1000]   # hardcoded #willneedtobe iterated
     t=np.arange(start=7, stop=1100+1, step=1)
 
-t_comp = 798 #time that concrete is pured eg addition of slab (ctrl f tcomp)
-t_slab = 725 # pour time need this to find E_c_tao_2 (slab)
+t_comp = 770 + 28 #time that concrete is pured eg addition of slab (ctrl f tcomp)
+t_slab = 770 # pour time need this to find E_c_tao_2 (slab)
 t_grout = 798   ## hardcoded, is when grout is added
 d_ref = 0                   # hardcoded
 P_p_init = 1000000 #hardcoded, force per strand
@@ -699,7 +699,7 @@ phi_p_steel = R_steel / (1 - R_steel) #HC
 # steel reinf material properties
 # moduli
 E_s = [0]        #no reinforced steel in girder
-E_p = [193000,193000,193000,193000,193000,193000] #Changed for 6 layers
+E_p = [193000,193000,193000] #Changed for 3 layers
 
 # E_c_tao calculation - p, fcmi, s
 p_conc = 2400       #hardcoded
@@ -717,14 +717,14 @@ ue_1 = 8974     #brief calc from Girder drawing - refer to additional document
 # Ac, Bc, Ic of section variables required
 A_s = [0]       # no renforced steel
 y_s = [0]           # no renforced steel
-A_p = np.array([(15/2)**2*14, (15/2)**2*27,(15/2)**2*27],dtype=np.float64)*math.pi       # hardcoded
+A_p = np.array([143*14, 143*27,143*27],dtype=np.float64)*math.pi       # hardcoded
 y_p = [(1218+184),(1268+184),(1318+184)] #hardcoded, prestress distance from very top
 diam_duct = 60              # hardcoded #disregarded
 n_strands = np.array([14,27,27], dtype=np.float64) #calc for each layer of prestressed steel
 d_c =801+184                   # calc by yt+184 (thickness of comp deck)
 
 # slab
-tao_2 =get_tao_2(t_slab, tao)
+tao_2 =get_tao_2(t_comp, tao)
 t_2 = get_t_2(t_comp, t)
 #t_2 = [40, 60, 61,200,30000]       # hardcoded - t array but only show post slab pour times
 #tao_2 = [40, 60,200, 30000] #Tao values after slab is poured
@@ -738,15 +738,15 @@ p_conc_2 = 2400       #hardcoded
 f_cmi_input_2 = 60    #Guess based on values
 s_input_2 = 1         #taken as high strength concrete
 
-i_gross_2 = 675 * 10 ** 6 #hardcoded
+i_gross_2 = 1.5942 * 10 ** 6 #hardcoded
 k4_input_2 = 0    #hardcoded
 f_c_input_2 = 55.2  #Provided in Report
 
-area_2 = 184*1816 #hardcoded
-ue_2 = 2*(184+1816)     #hardcoded
+area_2 = 95*2440 + 89*1816 #hardcoded
+ue_2 = 2*(95 + 2440 + 89 + 1816)     #hardcoded
 
-A_s_2 = np.array([(9.53/2)**2*15],dtype=np.float64)*math.pi #changed
-y_s_2 = [44] #Changed
+A_s_2 = np.array([16 * 71.33],dtype=np.float64)*math.pi #changed
+y_s_2 = [95 + 89/2] #Changed
 A_p_2 = [0]
 y_p_2 = [0]
 diam_duct_2 = 0 #not applicable
@@ -763,7 +763,7 @@ point_along_beam=np.arange(start=0, stop=length+1, step=1)*pow(10,3)
 points=len(point_along_beam)#number of points selected
 
 
-sw_addloading=np.array([16.49*pow(10,6),20.5356*pow(10,6),26.33*pow(10,6),27.8436*pow(10,6)])#additional UDL added for 1000 tao value
+sw_addloading=np.array([16.49*pow(10,6),26.33*pow(10,6),27.8436*pow(10,6)])#additional UDL added for 1000 tao value
 N_test_calc=get_N_beam(t,N_init)
 
 density_1 =25
@@ -1061,6 +1061,7 @@ for i in range(len(point_along_beam)):
 
 #print(deflection_plot_array)
 py.plot(t_result[0:len(t_result)-1] , deflection_plot_array[0:len(t_result)-1],'r')
+py.xticks([0 ,100 ,200 ,300 ,400, 500, 600, 700, 800, 900, 1000])
 py.xlabel("Number of Days")
 py.ylabel("Deflection (mm)")
 py.margins(x=0)
