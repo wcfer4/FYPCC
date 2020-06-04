@@ -1,8 +1,8 @@
 import numpy as np
 import math as math
 import matplotlib.pyplot as py
-import sympy as sp
-from scipy.integrate import  quad
+# import sympy as sp
+# from scipy.integrate import  quad
 
 # if user input needs to stored in a list
 def get_multiple_input(input_text):
@@ -636,14 +636,7 @@ def get_sw_beam(t_list,tao_list,density_gird,density_slab,area_gird,area_slab,sw
     loading = np.zeros(len(tao_list)) #create blank array to input
 
     for a in range(len(tao_list)): #This array determines the UDL for each tao value #HC
-        if a==0:
-            loading[a]=get_w_self(density_gird,area_gird)
-        elif a==1:
-            loading[a]=get_w_self(density_gird,area_gird)+get_w_self(density_slab,area_slab)
-        elif a>1:
-            for i in range(len(sw_add_loading)):
-                if a==(i+2):
-                    loading[a]=loading[a-1]+sw_add_loading[i]
+     loading[a]=sw_add_loading[a]
 
     for j in range(len(t_list)): #HC
         for i in range(len(tao_list)):
@@ -679,21 +672,21 @@ def get_trpzdl(points_beam,time_points_curve):
     return array
 
 if __name__ == '__main__':
-    tao = [7, 40, 100, 200] # hardcoded #will this be input by user?
-    #t = [7, 40, 60, 61,100,200,400,500,600,700,800,1000,4000]   # hardcoded #willneedtobe iterated
-    t=np.arange(start=7, stop=3000+1, step=1)
+    tao = [7, 725, 770,1000] # hardcoded #will this be input by user?
+    #t = [7,718,763,900,1000]   # hardcoded #willneedtobe iterated
+    t=np.arange(start=7, stop=1100+1, step=1)
 
-t_comp = 68 #time that concrete is pured eg addition of slab (ctrl f tcomp)
-t_slab = 40 # pour time need this to find E_c_tao_2 (slab)
-t_grout = 40   ## hardcoded, is when grout is added
+t_comp = 770 + 28 #time that concrete is pured eg addition of slab (ctrl f tcomp)
+t_slab = 770 # pour time need this to find E_c_tao_2 (slab)
+t_grout = 798   ## hardcoded, is when grout is added
 d_ref = 0                   # hardcoded
 P_p_init = 1000000 #hardcoded, force per strand
 
 # strain in steel calculation at each t
-f_p_steel = 1800    #hardcoded
-sigma_jack = 1000   #hardcoded
-rb_input = 1        #hardcoded
-temp_input = 25     #hardcoded
+f_p_steel = 1396    #changed
+sigma_jack = 1000   #unkown
+rb_input = 1        #changed #low relaxation strands used
+temp_input = 25     #unkown
 
 r_b_steel = get_r_b_steel(rb_input) #HC
 k4_steel = np.array(get_k4_steel(t)) #HC
@@ -705,30 +698,30 @@ phi_p_steel = R_steel / (1 - R_steel) #HC
 # concrete element 1 - material properties
 # steel reinf material properties
 # moduli
-E_s = [200000, 200000]        #hardcoded - need to change for length of array = number of re-steel in girder
-E_p = [200000, 200000]          #hardcoded - need to change for length of array = number of pre-steel in girder
+E_s = [0]        #no reinforced steel in girder
+E_p = [193000,193000,193000,193000,193000,193000] #Changed for 6 layers
 
 # E_c_tao calculation - p, fcmi, s
 p_conc = 2400       #hardcoded
-f_cmi_input = 50    #hardcoded
-s_input = 0         #hardcoded
+f_cmi_input = 90    #guesstimate based on Concrete structures textbook with table of f'c and fcmi values
+s_input = 1         #high early strength concrete was used #changed
 
 # phi_t_tao calculation - k2, k3, k4, k5, phi_basic
-i_gross = 49900 * 10 ** 6   # hardcoded
-k4_input = 0    #hardcoded
-f_c_input = 60  #hardcoded
+i_gross = 1.58 * 10 ** 11   # changed
+k4_input = 0    #based in SOuth Texas where it is semiarid therfore k4=0.7
+f_c_input = 90.2  #changed
 
-area_1 = 317000 #hardcoded
-ue_1 = 2200     #hardcoded
+area_1 = 6.598*10**5 #changed
+ue_1 = 8974     #brief calc from Girder drawing - refer to additional document
 
 # Ac, Bc, Ic of section variables required
-A_s = [900, 1800]       # hardcoded #reinforced steel in
-y_s = [210, 1240]           # hardcoded: y_p is above under prestress properties
-A_p = [800, 800]        # hardcoded
-y_p = [1030, 1160] #hardcoded, prestress distance from very top
-diam_duct = 60              # hardcoded
-n_strands = np.array([1, 1], dtype=np.float64) # hardcoded, strands per row
-d_c = 752                   # hardcoded
+A_s = [0]       # no renforced steel
+y_s = [0]           # no renforced steel
+A_p = np.array([143*14, 143*27,143*27],dtype=np.float64)*math.pi       # hardcoded
+y_p = [(1218+184),(1268+184),(1318+184)] #hardcoded, prestress distance from very top
+diam_duct = 60              # hardcoded #disregarded
+n_strands = np.array([14,27,27], dtype=np.float64) #calc for each layer of prestressed steel
+d_c =801+184                   # calc by yt+184 (thickness of comp deck)
 
 # slab
 tao_2 =get_tao_2(t_comp, tao)
@@ -737,49 +730,49 @@ t_2 = get_t_2(t_comp, t)
 #tao_2 = [40, 60,200, 30000] #Tao values after slab is poured
 
 # elemnt 2 properties start
-E_s_2 = [200000]
+E_s_2 = [1862] #Changed
 E_p_2 = [0]
 
 # E_c_tao_2 calculation - p, fcmi, s
 p_conc_2 = 2400       #hardcoded
-f_cmi_input_2 = 50    #hardcoded
-s_input_2 = 0         #hardcoded
+f_cmi_input_2 = 60    #Guess based on values
+s_input_2 = 1         #taken as high strength concrete
 
-i_gross_2 = 675 * 10 ** 6 #hardcoded
+i_gross_2 = 1.5942 * 10 ** 6 #hardcoded
 k4_input_2 = 0    #hardcoded
-f_c_input_2 = 60  #hardcoded
+f_c_input_2 = 55.2  #Provided in Report
 
-area_2 = 360000 #hardcoded
-ue_2 = 3500     #hardcoded
+area_2 = 95*2440 + 89*1816 #hardcoded
+ue_2 = 2*(95 + 2440 + 89 + 1816)     #hardcoded
 
-A_s_2 = [2700]
-y_s_2 = [75]
+A_s_2 = np.array([16 * 71.33],dtype=np.float64)*math.pi #changed
+y_s_2 = [95 + 89/2] #Changed
 A_p_2 = [0]
 y_p_2 = [0]
-diam_duct_2 = 0
-n_strands_2 = [0]
-d_c_2 = 75
+diam_duct_2 = 0 #not applicable
+n_strands_2 = [0] #not applicable
+d_c_2 = 184/2 #changed
 
 #Calculate Moment along the beam from UDL
-length=20
+
+length=36.89 #CHANGED
 length_beam=length*pow(10,3)
-N_init=100*pow(10,3)
+N_init=71.6*pow(10,3)
 point_along_beam=np.arange(start=0, stop=length+1, step=1)*pow(10,3)
 #point_along_beam=np.array([0,2.5,5,7.5,10,12.5,15,17.5,20])*pow(10,3) #points along the beam
 points=len(point_along_beam)#number of points selected
 
 
-sw_addloading=np.array([20*pow(10,6),30*pow(10,6)]) #In csv recording, have code to make this array
+sw_addloading=np.array([16.49*pow(10,6),20.5356*pow(10,6),26.33*pow(10,6),27.8436*pow(10,6)])#additional UDL added for 1000 tao value
 N_test_calc=get_N_beam(t,N_init)
 
 density_1 =25
 density_2=25
 UDL_perpoint=get_sw_beam(t,tao,density_1,density_2,area_1,area_2,sw_addloading)
-print(UDL_perpoint)
 
-eccentricity = 343
+eccentricity = 477
 P_e_moment=np.ones(len(t))*eccentricity*N_init
-print(P_e_moment)
+
 
 #calculate r_e_j #still haven't replaced r_e_j
 for a in range(len(point_along_beam)):
@@ -787,12 +780,13 @@ for a in range(len(point_along_beam)):
     M_r_e_j = np.zeros(len(t))
     N_r_e_j = get_N_beam(t, N_init)
     M_r_e_j=get_moment_beam(t,length_beam,point_along_beam[a],UDL_perpoint)
-    M_r_e_j = M_r_e_j + P_e_moment
+    M_r_e_j=M_r_e_j+P_e_moment
 
     if a==0:
         r_e_j=np.vstack((N_r_e_j,M_r_e_j))
     else:
         r_e_j=np.vstack((r_e_j,N_r_e_j,M_r_e_j))
+
 
 f_p_init_N = get_f_p_init_N(t, n_strands, P_p_init) #HC
 f_p_init_M = get_f_p_init_M(t, n_strands, P_p_init, y_p) #HC
@@ -910,7 +904,7 @@ post_D_c_j = get_D_c_j(t, post_A_c, post_B_c, post_I_c, E_c_tao)
 pre_D_c_j = get_D_c_j(t, pre_A_c, pre_B_c, pre_I_c, E_c_tao)
 D_c_j_2 = get_D_c_j(t_2, A_c_2, B_c_2, I_c_2, E_c_tao_2)
 
-post_tension = 1 #hardcoded
+post_tension = 0 #hardcoded
 #m = 0
 #n = 2
 
@@ -994,8 +988,9 @@ for z in range(0, points):
                 n = n + 2
             else:
                 for j in range(0, len(tao)):
-                    d = F_e_j_i[j, i] * r_c_j_1[:, j] + F_e_j_i_2[j - (len(tao) - len(tao_2)), i - (len(t) - len(t_2))] * r_c_j_2[:, j - (len(tao) - len(tao_2))]
-                    output = output + d
+                    for k in range(0,len(tao_2)):
+                        d = F_e_j_i[j, i] * r_c_j_1[:, j] + F_e_j_i_2[k, i - (len(t) - len(t_2))] * r_c_j_2[:, j - k]
+                        output = output + d
                 f_cr_j[:, i] = output
 
                 f_set_p = get_f_set(t, t_comp, A_p, E_p, strain_j, y_p)  # prestress in element 1
@@ -1066,10 +1061,12 @@ for i in range(len(point_along_beam)):
 
 #print(deflection_plot_array)
 py.plot(t_result[0:len(t_result)-1] , deflection_plot_array[0:len(t_result)-1],'r')
+py.xticks([0 ,100 ,200 ,300 ,400, 500, 600, 700, 800, 900, 1000])
 py.xlabel("Number of Days")
 py.ylabel("Deflection (mm)")
 py.margins(x=0)
 py.show()
+
 
 #Code to display deflection versus time - this is for t(0)
 #py.plot(point_along_beam, second_integration[0],'or')
