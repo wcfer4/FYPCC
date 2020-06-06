@@ -994,7 +994,7 @@ for z in range(0, points):
                 n = n + 2
             else:
                 for j in range(0, len(tao)):
-                    d = F_e_j_i[j, i] * r_c_j_1[:, j] + F_e_j_i_2[j - (len(tao) - len(tao_2)), i - (len(t) - len(t_2))] * r_c_j_2[:, j - (len(tao) - len(tao_2))]
+                    d = F_e_j_i[j, i] * r_c_j_1[:, i] + F_e_j_i_2[j - (len(tao) - len(tao_2)), i - (len(t) - len(t_2))] * r_c_j_2[:, j - (len(tao) - len(tao_2))]
                     output = output + d
                 f_cr_j[:, i] = output
 
